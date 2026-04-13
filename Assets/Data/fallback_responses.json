@@ -1,0 +1,20 @@
+{
+  "timeout": [
+    "Hmm, my brain's taking a bit longer than usual. Try asking again!",
+    "Ooh that's a tough one, give me a moment... actually, let's try again!",
+    "My thinking gears got stuck! Ask me again?"
+  ],
+  "error": [
+    "Oops, something went a little weird in my head... Let's try that again!",
+    "Hmm, I got confused for a second there. Can you repeat that?",
+    "Oh no, my brain had a little hiccup! Try again please!"
+  ],
+  "cancel": [
+    "Oh okay! So, what did you want to talk about?",
+    "Sure! What's on your mind?",
+    "Alright! What do you wanna chat about?"
+  ],
+  "model_not_found": [
+    "Looks like my brain isn't ready yet... Can you check the model file?"
+  ]
+}

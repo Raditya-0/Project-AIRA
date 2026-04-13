@@ -1,0 +1,42 @@
+# Unity generated
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+MemoryCaptures/
+
+# Model AI & TTS
+Assets/Models/*.gguf
+Assets/Audio/voices/*.onnx
+
+# LlamaLib Large Binaries 
+Assets/StreamingAssets/LlamaLib-v2.0.5/android-arm64/
+Assets/StreamingAssets/LlamaLib-v2.0.5/android-x64/
+Assets/StreamingAssets/LlamaLib-v2.0.5/linux-x64/
+Assets/StreamingAssets/LlamaLib-v2.0.5/win-x64/native/*.dll
+
+# Unity meta conflicts
+*.pidb
+*.suo
+*.sln
+*.csproj
+*.unityproj
+*.booproj
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.user
+*.userprefs
+
+# Crash & log
+crashlytics-build.properties
+*.log

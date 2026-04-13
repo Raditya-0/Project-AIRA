@@ -1,0 +1,19 @@
+{
+  "character_name": "Aira",
+  "model_path": "Assets/Models/qwen2.5-3b-q4.gguf",
+  "llm_timeout_seconds": 15,
+  "llm_max_tokens": 256,
+  "llm_context_limit": 2000,
+  "tts_engine": "piper",
+  "tts_voice_path": "",
+  "lipsync_min_rms": 0.02,
+  "lipsync_max_rms": 0.3,
+  "memory_summary_interval": 20,
+  "memory_sliding_threshold": 1500,
+  "memory_summary_threshold": 1800,
+  "idle_comment_interval_sec": 10,
+  "fallback_responses_path": "Assets/Data/fallback_responses.json",
+  "system_prompt_path": "Assets/Data/system_prompt_template.txt",
+  "autoblink_min_sec": 2.0,
+  "autoblink_max_sec": 6.0
+}
