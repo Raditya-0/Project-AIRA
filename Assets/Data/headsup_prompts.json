@@ -1,0 +1,8 @@
+{
+  "aira_first_agree": "Yay! I'll give the clues first! Ready? Here we go!",
+  "aira_first_disagree": "Okay... you go first then... [SAD]",
+  "user_first_agree": "Alright, you go first! I'll try to guess!",
+  "user_first_disagree": "Oh wait, me?! Okay then, I'll do it! [SURPRISED]",
+  "times_up": "Time's up! Let's see how we did!",
+  "round_end": "Great round! You got {correct} correct and skipped {skip}!"
+}

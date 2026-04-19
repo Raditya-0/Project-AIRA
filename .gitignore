@@ -8,15 +8,31 @@ Logs/
 UserSettings/
 MemoryCaptures/
 
-# Model AI & TTS
+# Model AI & TTS 
 Assets/Models/*.gguf
 Assets/Audio/voices/*.onnx
+Assets/StreamingAssets/Piper/piper.exe
+Assets/StreamingAssets/Piper/*.onnx
+Assets/StreamingAssets/Piper/*.onnx.json
 
-# LlamaLib Large Binaries 
+# Vosk STT model
+Assets/StreamingAssets/vosk-model*/
+
+# Emotion Classifier model 
+Assets/Models/*.onnx
+Assets/StreamingAssets/EmotionClassifier/vocab.txt
+Assets/StreamingAssets/EmotionClassifier/emotion_labels.json
+
+# LlamaLib binaries
 Assets/StreamingAssets/LlamaLib-v2.0.5/android-arm64/
 Assets/StreamingAssets/LlamaLib-v2.0.5/android-x64/
 Assets/StreamingAssets/LlamaLib-v2.0.5/linux-x64/
 Assets/StreamingAssets/LlamaLib-v2.0.5/win-x64/native/*.dll
+
+# Runtime memory saves 
+Assets/../*.json
+**/aira_memory.json
+**/aira_session.json
 
 # Unity meta conflicts
 *.pidb

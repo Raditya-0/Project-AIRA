@@ -2,6 +2,12 @@ using System;
 using System.Collections;
 using System.IO;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using AIRA.AI;
+using AIRA.Character;
+using AIRA.Emotion;
+using AIRA.UI;
+using AIRA.Voice;
 
 public class GameManager : MonoBehaviour
 {
@@ -12,8 +18,10 @@ public class GameManager : MonoBehaviour
         LISTENING,
         THINKING,
         SPEAKING,
-        MINIGAME,
-        MINIGAME_COMMENT,
+        MINIGAME_INTRO,     // flow awal: siapa duluan, kategori
+        MINIGAME_PLAYING,   // game aktif
+        MINIGAME_RESULT,    // AIRA comment hasil
+        MINIGAME_PLATFORMER, // platformer level aktif
         ERROR
     }
 
@@ -148,6 +156,13 @@ public class GameManager : MonoBehaviour
     {
         if (this == null || Instance == null) return;
 
+        // Delegasi input ke minigame
+        if (CurrentState == GameState.MINIGAME_INTRO || CurrentState == GameState.MINIGAME_PLAYING)
+        {
+            HeadsUpGame.Instance?.ProcessUserResponse(userInput);
+            return;
+        }
+
         if (CurrentState != GameState.IDLE && CurrentState != GameState.LISTENING)
         {
             Debug.LogWarning($"[GameManager] ProcessUserInput ignored — state is {CurrentState}.");
@@ -164,7 +179,29 @@ public class GameManager : MonoBehaviour
     {
         MemoryManager.Instance?.AddMessage("user", userInput);
 
-        string context = MemoryManager.Instance?.GetFullContext() ?? userInput;
+        string fullContext = MemoryManager.Instance?.GetFullContext() ?? userInput;
+
+        // Klasifikasi emosi sebelum kirim ke LLM
+        EmotionResult emotionResult = null;
+        bool classifyDone = false;
+
+        // Cek toggle AIRASettings dulu
+        bool canClassify = AIRASettings.Instance != null
+            && AIRASettings.Instance.UseEmotionClassifier
+            && EmotionClassifier.Instance != null
+            && EmotionClassifier.Instance.IsReady;
+
+        if (canClassify)
+        {
+            EmotionClassifier.Instance.Classify(userInput, result =>
+            {
+                emotionResult = result;
+                classifyDone  = true;
+            });
+            yield return new WaitUntil(() => classifyDone);
+        }
+
+        string context = BuildEmotionContext(fullContext, emotionResult);
         string response = null;
 
         if (LLMManager.Instance != null)
@@ -196,10 +233,43 @@ public class GameManager : MonoBehaviour
         _chatUIManager?.DisplayMessage("aira", cleanText);
         _chatUIManager?.ShowDialogBubble(cleanText, 4f);
 
-        float speakDuration = Mathf.Clamp(cleanText.Length * 0.05f, 1.5f, 6f);
         ChangeState(GameState.SPEAKING);
-        yield return new WaitForSeconds(speakDuration);
-        ChangeState(GameState.IDLE);
+
+        if (TTSManager.Instance != null)
+        {
+            // Ambil tag ekspresi dari response
+            string expression = expressionTag.Trim('[', ']');
+            TTSManager.Instance.Speak(cleanText, expression);
+        }
+        else
+        {
+            // Fallback timer jika TTS tidak tersedia
+            float speakDuration = Mathf.Clamp(cleanText.Length * 0.05f, 1.5f, 6f);
+            yield return new WaitForSeconds(speakDuration);
+            ChangeState(GameState.IDLE);
+        }
+    }
+
+    // Inject emotion context ke LLM input
+    private string BuildEmotionContext(string originalText, EmotionResult emotion)
+    {
+        bool skip = emotion == null
+            || (emotion.dominantEmotion == "neutral" && emotion.confidence < 0.6f)
+            || EmotionClassifier.Instance == null
+            || !EmotionClassifier.Instance.IsReady;
+
+        if (skip) return originalText;
+
+        string secondary = emotion.top3 != null && emotion.top3.Count > 1
+            ? $"{emotion.top3[1].emotion} ({emotion.top3[1].confidence:P0})"
+            : "-";
+
+        return
+            $"[PLAYER EMOTION DETECTED]\n" +
+            $"Dominant: {emotion.dominantEmotion} ({emotion.confidence:P0})\n" +
+            $"Secondary: {secondary}\n" +
+            $"Suggested tone: {emotion.airaHint}\n\n" +
+            originalText;
     }
 
     // Thinking Timeout
@@ -235,6 +305,20 @@ public class GameManager : MonoBehaviour
         _chatUIManager?.ShowDialogBubble(fallback, 4f);
 
         ChangeState(GameState.ERROR);
+    }
+
+    // Mulai scene Platformer
+    public void StartPlatformer()
+    {
+        ChangeState(GameState.MINIGAME_PLATFORMER);
+        SceneManager.LoadScene("Platformer_Level01");
+    }
+
+    // Kembali ke scene utama
+    public void EndPlatformer()
+    {
+        SceneManager.LoadScene("MainScene");
+        ChangeState(GameState.IDLE);
     }
 }
 
