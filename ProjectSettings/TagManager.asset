@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - AiraCharacter
   layers:
   - Default
   - TransparentFX
@@ -11,9 +12,9 @@ TagManager:
   - Character
   - Water
   - UI
-  - 
-  - 
-  - 
+  - Player
+  - AiraCharacter
+  - Ground
   - 
   - 
   - 
