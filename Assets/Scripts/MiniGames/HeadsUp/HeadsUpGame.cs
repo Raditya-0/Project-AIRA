@@ -85,7 +85,7 @@ public class HeadsUpGame : MiniGameBase
     {
         string cleaned = TextUtils.StripEmoji(text);
         ChatUIManager.Instance?.DisplayMessage("aira", cleaned);
-        ChatUIManager.Instance?.ShowDialogBubble(cleaned, 4f);
+        FindFirstObjectByType<AiraFloatingBubble>()?.ShowDialogBubble(cleaned, 4f);
         AiraController.Instance?.SetExpression(expression);
         GameManager.Instance?.ChangeState(GameManager.GameState.SPEAKING);
         TTSManager.Instance?.EnqueueSpeak(cleaned, expression);

@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using AIRA.UI;
 using AIRA.Voice;
 
 namespace AIRA.MiniGames.Platformer
@@ -10,21 +12,21 @@ namespace AIRA.MiniGames.Platformer
         // Singleton global
         public static PlatformerGame Instance { get; private set; }
 
+        // Event broadcast state level
+        public static event Action OnKeyCollected;
+        public static event Action OnEndReached;
+
         [Header("References")]
         [SerializeField] private PlayerController _player;
         [SerializeField] private AiraAIController _airaAI;
         [SerializeField] private KeyPickup        _key;
-        [SerializeField] private Door             _door;
+        [SerializeField] private EndPoint         _endPoint;
         [SerializeField] private Transform        _playerSpawn;
         [SerializeField] private Transform        _airaSpawn;
 
-        [Header("Settings")]
-        [SerializeField] private float _levelCompleteDelay = 2f;
-
         // State level
-        public bool KeyCollected  { get; private set; }
-        public bool PlayerAtDoor  { get; private set; }
-        public bool AiraAtDoor    { get; private set; }
+        public bool KeyCollected { get; private set; }
+        public bool EndReached   { get; private set; }
 
         // Apakah game aktif
         public override bool IsGameActive => _isActive;
@@ -51,8 +53,7 @@ namespace AIRA.MiniGames.Platformer
         public override void StartGame()
         {
             KeyCollected = false;
-            PlayerAtDoor = false;
-            AiraAtDoor   = false;
+            EndReached   = false;
             _isActive    = true;
 
             if (_player != null && _playerSpawn != null)
@@ -62,7 +63,7 @@ namespace AIRA.MiniGames.Platformer
                 _airaAI.transform.position = _airaSpawn.position;
 
             _key?.gameObject.SetActive(true);
-            _door?.SetLocked(true);
+            _endPoint?.ResetEndPoint();
 
             GameManager.Instance?.ChangeState(GameManager.GameState.MINIGAME_PLATFORMER);
             Debug.Log("[PlatformerGame] Level dimulai.");
@@ -83,23 +84,25 @@ namespace AIRA.MiniGames.Platformer
         {
             if (KeyCollected) return;
             KeyCollected = true;
-            _door?.SetLocked(false);
             Debug.Log("[PlatformerGame] Key collected.");
+            OnKeyCollected?.Invoke();
             CheckLevelComplete();
         }
 
-        // Catat siapa yang sampai door
-        public void NotifyAtDoor(bool isPlayer)
+        // Catat kedua entitas di endpoint
+        public void NotifyEndReached()
         {
-            if (isPlayer) PlayerAtDoor = true;
-            else          AiraAtDoor   = true;
+            if (EndReached) return;
+            EndReached = true;
+            Debug.Log("[PlatformerGame] End reached.");
+            OnEndReached?.Invoke();
             CheckLevelComplete();
         }
 
         // Cek kondisi level selesai
         private void CheckLevelComplete()
         {
-            if (!KeyCollected || !PlayerAtDoor || !AiraAtDoor) return;
+            if (!KeyCollected || !EndReached) return;
             StartCoroutine(LevelCompleteRoutine());
         }
 
@@ -107,9 +110,20 @@ namespace AIRA.MiniGames.Platformer
         private IEnumerator LevelCompleteRoutine()
         {
             _isActive = false;
-            TTSManager.Instance?.EnqueueSpeak("We did it! Level complete!", "HAPPY");
-            yield return new WaitForSeconds(_levelCompleteDelay);
-            EndGame();
+            AiraSpeak("We did it! Level complete!", "HAPPY");
+            // Tunggu TTS selesai
+            yield return new WaitUntil(() => !TTSManager.Instance.IsSpeaking);
+            // Delay supaya tidak terlalu tiba-tiba
+            yield return new WaitForSeconds(1f);
+            GameManager.Instance?.EndPlatformer();
+        }
+
+        // Update teks bubble dan jalankan TTS
+        private void AiraSpeak(string text, string expression = "HAPPY")
+        {
+            string clean = TextUtils.StripExpressionTags(text);
+            FindFirstObjectByType<AiraFloatingBubble>()?.UpdateText(clean);
+            TTSManager.Instance?.EnqueueSpeak(text, expression);
         }
 
         // Handle aksi dari komponen lain
@@ -117,9 +131,8 @@ namespace AIRA.MiniGames.Platformer
         {
             switch (action)
             {
-                case "key_collected": NotifyKeyCollected();          break;
-                case "at_door":       NotifyAtDoor((bool)data);      break;
-                case "stacking":      _airaAI?.OnPlayerStacking();   break;
+                case "key_collected": NotifyKeyCollected();        break;
+                case "stacking":      _airaAI?.OnPlayerStacking(); break;
             }
         }
     }

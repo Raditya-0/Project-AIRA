@@ -12,7 +12,7 @@ EditorBuildSettings:
     path: Assets/Scenes/MainScene.unity
     guid: a8b07dd2eacff5041816b5a05c0dd917
   - enabled: 1
-    path: Assets/MiniGames/Platformer/Scenes/Platformer_Level01.unity
+    path: Assets/Scenes/Platformer/Platformer_Level01.unity
     guid: ad712956a3b97524eb7aceec091f7532
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}

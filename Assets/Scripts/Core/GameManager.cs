@@ -231,7 +231,7 @@ public class GameManager : MonoBehaviour
 
         string cleanText = AiraController.StripExpressionTags(response);
         _chatUIManager?.DisplayMessage("aira", cleanText);
-        _chatUIManager?.ShowDialogBubble(cleanText, 4f);
+        FindFirstObjectByType<AiraFloatingBubble>()?.ShowDialogBubble(cleanText, 4f);
 
         ChangeState(GameState.SPEAKING);
 
@@ -302,7 +302,7 @@ public class GameManager : MonoBehaviour
 
         string fallback = GetFallbackResponse("timeout");
         _chatUIManager?.DisplayMessage("aira", fallback);
-        _chatUIManager?.ShowDialogBubble(fallback, 4f);
+        FindFirstObjectByType<AiraFloatingBubble>()?.ShowDialogBubble(fallback, 4f);
 
         ChangeState(GameState.ERROR);
     }

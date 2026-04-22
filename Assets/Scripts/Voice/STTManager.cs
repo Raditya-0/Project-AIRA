@@ -88,6 +88,13 @@ namespace AIRA.Voice
                 case GameManager.GameState.IDLE:
                     ResumeListening();
                     break;
+                case GameManager.GameState.MINIGAME_PLATFORMER:
+                    // Kalau belum listening sama sekali, start dulu
+                    if (!_isListening)
+                        StartListening();
+                    else
+                        ResumeListening();
+                    break;
             }
         }
 
@@ -315,13 +322,20 @@ namespace AIRA.Voice
         {
             if (string.IsNullOrWhiteSpace(text)) return;
 
-            if (_inputField != null)
+            // Kalau ada ChatUIManager, pakai seperti biasa
+            if (ChatUIManager.Instance != null)
             {
-                _inputField.text = text;
-                _inputField.textComponent.color = _normalColor;
+                if (_inputField != null)
+                {
+                    _inputField.text = text;
+                    _inputField.textComponent.color = _normalColor;
+                }
+                ChatUIManager.Instance.OnUserSubmit();
+                return;
             }
 
-            ChatUIManager.Instance?.OnUserSubmit();
+            // Fallback: di scene Platformer, kirim langsung ke GameManager
+            GameManager.Instance?.ProcessUserInput(text);
         }
 
         // Bersihkan resource Vosk

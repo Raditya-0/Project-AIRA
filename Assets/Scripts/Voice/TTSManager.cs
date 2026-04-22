@@ -45,6 +45,9 @@ namespace AIRA.Voice
         public event Action OnSpeakStart;
         public event Action OnSpeakEnd;
 
+        // Event broadcast teks ke semua listener
+        public static event Action<string> OnSpeakText;
+
         // Properti status TTS aktif
         public bool IsSpeaking => _isSpeaking || _isProcessingQueue;
 
@@ -142,6 +145,7 @@ namespace AIRA.Voice
         public void EnqueueSpeak(string text, string expression = "NEUTRAL")
         {
             if (string.IsNullOrWhiteSpace(text)) return;
+            OnSpeakText?.Invoke(TextUtils.StripExpressionTags(text));
             _speakQueue.Enqueue((text, expression));
             if (!_isProcessingQueue)
                 _queueCoroutine = StartCoroutine(ProcessSpeakQueue());
@@ -175,6 +179,7 @@ namespace AIRA.Voice
         public void Speak(string text, string expression = "NEUTRAL")
         {
             if (string.IsNullOrWhiteSpace(text)) return;
+            OnSpeakText?.Invoke(TextUtils.StripExpressionTags(text));
 
             StopSpeaking();
 

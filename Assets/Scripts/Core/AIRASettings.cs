@@ -15,6 +15,9 @@ public class AIRASettings : MonoBehaviour
     [SerializeField] private bool  _sttEnabled = true;
     [SerializeField] [Range(0f, 1f)] private float _ttsVolume = 1f;
 
+    [Header("Platformer Settings")]
+    [SerializeField] private bool _platformerSTTEnabled = false;
+
     [Header("Debug")]
     [SerializeField] private bool _showDebugLog = true;
 
@@ -24,7 +27,8 @@ public class AIRASettings : MonoBehaviour
     [SerializeField] private LLMManager  _llmManager;
 
     // Properti akses dari luar
-    public bool  UseEmotionClassifier => _useEmotionClassifier;
+    public bool  UseEmotionClassifier    => _useEmotionClassifier;
+    public bool  PlatformerSTTEnabled    => _platformerSTTEnabled;
     public bool  TTSEnabled           => _ttsEnabled;
     public bool  STTEnabled           => _sttEnabled;
     public float TTSVolume            => _ttsVolume;

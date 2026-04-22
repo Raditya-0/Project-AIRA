@@ -32,7 +32,7 @@ AIRA membutuhkan model **Qwen 2.5 3B (Q4\_K\_M)** sebagai otak utamanya.
 - **Penempatan:** Setelah selesai diunduh, pastikan nama filenya adalah `qwen2.5-3b-instruct-q4_k_m.gguf` dan pindahkan file tersebut ke dalam folder:
   `Assets/Models/qwen2.5-3b-instruct-q4_k_m.gguf`
 
-### 3. Restore LLMUnity Dependencies 
+### 3. Restore LLMUnity Dependencies
 
 File *binary* raksasa (`.dll`) milik LLMUnity sengaja tidak di-*push* ke GitHub. Saat kamu membuka project ini untuk pertama kali:
 
@@ -45,7 +45,7 @@ File *binary* raksasa (`.dll`) milik LLMUnity sengaja tidak di-*push* ke GitHub.
 
 AIRA menggunakan Piper TTS untuk suara karakter.
 
-- **Download Piper:** [piper_windows_amd64.zip](https://github.com/rhasspy/piper/releases) 
+- **Download Piper:** [piper_windows_amd64.zip](https://github.com/rhasspy/piper/releases)
 - **Ekstrak** dan ambil file `piper.exe`
 - **Penempatan:** `Assets/StreamingAssets/Piper/piper.exe`
 - **Download voice model Amy:**
@@ -67,10 +67,11 @@ AIRA menggunakan Vosk untuk speech recognition offline.
 ### 6. (Opsional) Setup Emotion Classifier
 
 Fitur klasifikasi emosi membutuhkan model ONNX tambahan.
-Bisa dilewati — fitur ini bisa dimatikan via toggle
+Bisa dilewati, fitur ini bisa dimatikan via toggle
 `AIRASettings → Use Emotion Classifier` di Inspector.
 
 Jika ingin mengaktifkan:
+
 - **Download model:** [DistilBERT Emotion Classifier](https://www.kaggle.com/models/raditya0/distilbert-emotion-classifier)
 - **Penempatan:** `Assets/StreamingAssets/EmotionClassifier/`
   - `model.onnx`
@@ -82,4 +83,3 @@ Jika ingin mengaktifkan:
 - Di dalam panel Project Unity, masuk ke folder: `Assets/Scenes/`
 - Buka file `SampleScene.unity`.
 - Tekan tombol Play dan mulailah mengobrol dengan AIRA\!
-
