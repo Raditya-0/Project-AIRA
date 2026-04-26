@@ -1,9 +1,9 @@
 using System;
-using System.Collections;
-using System.IO;
+using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using Vosk;
+using Whisper;
+using Whisper.Utils;
 using AIRA.UI;
 
 namespace AIRA.Voice
@@ -15,32 +15,27 @@ namespace AIRA.Voice
         // Event state listening berubah
         public static event Action<bool> OnListeningStateChanged;
 
-        // Event hasil STT final (ISTTProvider)
+        // Event hasil STT final
         public event Action<string> OnResultReady;
 
         [Header("Referensi")]
         [SerializeField] private TMP_InputField _inputField;
 
-        [Header("Vosk Config")]
-        [SerializeField] private string _modelPath = "vosk-model-en-us-0.22-lgraph";
+        [Header("Whisper Config")]
+        [SerializeField] private WhisperManager _whisperManager;
+        [SerializeField] private MicrophoneRecord _micRecord;
+        [SerializeField] private string _language = "en";
+
+        [Header("Microphone Device")]
+        [SerializeField] private int _deviceIndex = 0;
 
         [Header("Settings")]
-        [SerializeField] private float _silenceTimeout  = 1.5f;
-        [SerializeField] private bool  _autoSend        = true;
-        [SerializeField] private Color _hypothesisColor = new Color(1f, 1f, 1f, 0.6f);
+        [SerializeField] private bool _autoSend = true;
 
-        private VoskRecognizer _recognizer;
-        private AudioClip      _micClip;
-        private bool           _isListening;
-        private bool           _isPaused;
-        private Coroutine      _silenceCoroutine;
-        private Coroutine      _micStreamCoroutine;
-        private string         _lastHypothesis = "";
-        private Color          _normalColor;
-
-        // Helper parse JSON Vosk result
-        [Serializable] private class VoskResult  { public string text    = ""; }
-        [Serializable] private class VoskPartial { public string partial = ""; }
+        private bool  _isListening;
+        private bool  _isPaused;
+        private bool  _shouldTranscribe;
+        private Color _normalColor;
 
         // Awake setup singleton
         private void Awake()
@@ -53,25 +48,38 @@ namespace AIRA.Voice
             Instance = this;
         }
 
-        // Start inisialisasi semua
+        // Start inisialisasi Whisper
         private void Start()
         {
             if (_inputField != null)
                 _normalColor = _inputField.textComponent.color;
 
-            InitVosk();
+            _whisperManager.language = _language;
+
+            // Terapkan device awal
+            ApplyDeviceToMicRecord();
+            if (Debug.isDebugBuild)
+            {
+                var devices = GetAvailableDevices();
+                for (int i = 0; i < devices.Length; i++)
+                    Debug.Log($"[STTManager] Device [{i}]: {devices[i]}");
+            }
+
+            LoadingGate.Instance?.SetSTTReady();
         }
 
-        // Subscribe event state game
+        // Subscribe event game dan mic
         private void OnEnable()
         {
             GameManager.OnStateChanged += HandleStateChanged;
+            _micRecord.OnRecordStop    += HandleRecordStop;
         }
 
-        // Lepas event state game
+        // Lepas event game dan mic
         private void OnDisable()
         {
             GameManager.OnStateChanged -= HandleStateChanged;
+            _micRecord.OnRecordStop    -= HandleRecordStop;
         }
 
         // Pause/resume sesuai state
@@ -89,7 +97,6 @@ namespace AIRA.Voice
                     ResumeListening();
                     break;
                 case GameManager.GameState.MINIGAME_PLATFORMER:
-                    // Kalau belum listening sama sekali, start dulu
                     if (!_isListening)
                         StartListening();
                     else
@@ -98,49 +105,21 @@ namespace AIRA.Voice
             }
         }
 
-        // Init model Vosk
-        private void InitVosk()
-        {
-            string fullPath = Path.Combine(Application.streamingAssetsPath, _modelPath);
-
-            if (!Directory.Exists(fullPath))
-            {
-                Debug.LogWarning($"[STTManager] Model tidak ditemukan: {fullPath}");
-                return;
-            }
-
-            try
-            {
-                var model = new Model(fullPath);
-                _recognizer = new VoskRecognizer(model, 16000f);
-                _recognizer.SetMaxAlternatives(0);
-                _recognizer.SetWords(true);
-                Debug.Log("[STTManager] Vosk berhasil diinisialisasi.");
-                // STT siap dipakai
-                LoadingGate.Instance?.SetSTTReady();
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[STTManager] Gagal init Vosk: {e.Message}");
-            }
-        }
+        // Cek setting STT aktif
+        private bool IsSTTEnabled()
+            => AIRASettings.Instance == null || AIRASettings.Instance.STTEnabled;
 
         // Mulai dengarkan mic
         public void StartListening()
         {
-            if (_recognizer == null)
-            {
-                Debug.LogWarning("[STTManager] Recognizer belum siap.");
-                return;
-            }
+            if (_isListening || !IsSTTEnabled()) return;
 
-            if (_isListening) return;
-
-            _isListening = true;
-            _isPaused    = false;
+            _isListening      = true;
+            _isPaused         = false;
+            _shouldTranscribe = true;
             OnListeningStateChanged?.Invoke(true);
 
-            _micStreamCoroutine = StartCoroutine(MicStreamCoroutine());
+            _micRecord.StartRecord();
         }
 
         // Berhenti dengarkan mic
@@ -148,21 +127,11 @@ namespace AIRA.Voice
         {
             if (!_isListening) return;
 
-            _isListening = false;
-            _isPaused    = false;
+            _isListening      = false;
+            _isPaused         = false;
+            _shouldTranscribe = false;
 
-            if (_silenceCoroutine != null)
-            {
-                StopCoroutine(_silenceCoroutine);
-                _silenceCoroutine = null;
-            }
-
-            if (_micStreamCoroutine != null)
-            {
-                StopCoroutine(_micStreamCoroutine);
-                _micStreamCoroutine = null;
-            }
-
+            _micRecord.StopRecord();
             OnListeningStateChanged?.Invoke(false);
         }
 
@@ -170,16 +139,23 @@ namespace AIRA.Voice
         public void PauseListening()
         {
             if (!_isListening || _isPaused) return;
-            _isPaused = true;
+
+            _isPaused         = true;
+            _shouldTranscribe = false;
+
+            _micRecord.StopRecord();
             OnListeningStateChanged?.Invoke(false);
         }
 
         // Resume setelah AI selesai
         public void ResumeListening()
         {
-            if (!_isListening || !_isPaused) return;
+            if (!_isListening || !_isPaused || !IsSTTEnabled()) return;
+
             _isPaused = false;
             OnListeningStateChanged?.Invoke(true);
+
+            _micRecord.StartRecord();
         }
 
         // Toggle mic button on/off
@@ -191,130 +167,76 @@ namespace AIRA.Voice
                 StartListening();
         }
 
-        // Stream audio mic ke Vosk
-        private IEnumerator MicStreamCoroutine()
+        // Ambil semua device mic
+        public string[] GetAvailableDevices()
+            => Microphone.devices;
+
+        // Set device berdasarkan index
+        public void SetDevice(int index)
         {
-            int sampleRate = 16000;
-            int bufferSize = 4096;
-            int lastSample = 0;
+            if (index < 0 || index >= Microphone.devices.Length) return;
+            _deviceIndex = index;
 
-            _micClip = Microphone.Start(null, true, 10, sampleRate);
-
-            while (_isListening)
+            if (_isListening && !_isPaused)
             {
-                if (_isPaused)
-                {
-                    yield return null;
-                    continue;
-                }
-
-                int currentPos = Microphone.GetPosition(null);
-                if (currentPos < lastSample) lastSample = 0;
-
-                int sampleCount = currentPos - lastSample;
-                if (sampleCount >= bufferSize)
-                {
-                    float[] samples = new float[sampleCount];
-                    _micClip.GetData(samples, lastSample);
-
-                    // Konversi float ke short untuk Vosk
-                    short[] shorts = new short[samples.Length];
-                    for (int i = 0; i < samples.Length; i++)
-                        shorts[i] = (short)(samples[i] * 32767);
-
-                    // Feed ke recognizer
-                    bool isFinal = _recognizer.AcceptWaveform(shorts, shorts.Length);
-                    if (isFinal)
-                        OnResult(_recognizer.Result());
-                    else
-                        OnHypothesis(_recognizer.PartialResult());
-
-                    lastSample = currentPos;
-                }
-                yield return null;
+                _micRecord.StopRecord();
+                ApplyDeviceToMicRecord();
+                _micRecord.StartRecord();
             }
-
-            Microphone.End(null);
+            else
+            {
+                ApplyDeviceToMicRecord();
+            }
         }
 
-        // Tampil preview hypothesis abu-abu
-        private void OnHypothesis(string json)
+        // Isi dropdown dengan devices
+        public void PopulateDropdown(TMP_Dropdown dropdown)
         {
-            if (_inputField == null) return;
-            if (_inputField.isFocused && !_isListening) return;
-
-            var data = JsonUtility.FromJson<VoskPartial>(json);
-            if (data == null || string.IsNullOrEmpty(data.partial)) return;
-            if (data.partial == _lastHypothesis) return;
-
-            // Strip karakter non-standar dari hasil STT
-            string cleaned = TextUtils.CleanSTTResult(data.partial);
-            _lastHypothesis = data.partial;
-            _inputField.text = cleaned;
-            _inputField.textComponent.color = _hypothesisColor;
-
-            // Reset timer setiap ada speech
-            if (_silenceCoroutine != null)
-                StopCoroutine(_silenceCoroutine);
-            _silenceCoroutine = StartCoroutine(SilenceTimeoutCoroutine());
+            if (dropdown == null) return;
+            dropdown.ClearOptions();
+            var options = new List<string>();
+            foreach (var device in Microphone.devices)
+                options.Add(device);
+            dropdown.AddOptions(options);
+            dropdown.onValueChanged.AddListener(SetDevice);
         }
 
-        // Proses hasil final Vosk
-        private void OnResult(string json)
+        // Terapkan device ke MicrophoneRecord
+        private void ApplyDeviceToMicRecord()
         {
-            if (_inputField == null) return;
-            if (_inputField.isFocused && !_isListening) return;
+            string deviceName = Microphone.devices.Length > _deviceIndex
+                ? Microphone.devices[_deviceIndex]
+                : null;
+            _micRecord.SelectedMicDevice = deviceName;
+            Debug.Log($"[STTManager] Mic device: {deviceName ?? "Default"}");
+        }
 
-            var data = JsonUtility.FromJson<VoskResult>(json);
-            if (data == null || string.IsNullOrEmpty(data.text)) return;
+        // Handle rekaman selesai, transcribe ke Whisper
+        private async void HandleRecordStop(AudioChunk chunk)
+        {
+            if (!_shouldTranscribe || chunk.Data == null) return;
 
-            if (_silenceCoroutine != null)
-            {
-                StopCoroutine(_silenceCoroutine);
-                _silenceCoroutine = null;
-            }
+            var result = await _whisperManager.GetTextAsync(chunk.Data, chunk.Frequency, chunk.Channels);
+            if (result == null || string.IsNullOrWhiteSpace(result.Result)) return;
+            if (result.Result.Contains("[BLANK_AUDIO]")) return;
 
-            // Strip karakter non-standar dari hasil STT
-            string cleaned = TextUtils.CleanSTTResult(data.text);
-            _lastHypothesis = "";
-            _inputField.text = cleaned;
-            _inputField.textComponent.color = _normalColor;
+            string cleaned = TextUtils.CleanSTTResult(result.Result);
+            if (string.IsNullOrWhiteSpace(cleaned)) return;
+
+            if (_inputField != null)
+                _inputField.text = cleaned;
 
             OnResultReady?.Invoke(cleaned);
 
             if (_autoSend)
                 SendToChat(cleaned);
-        }
 
-        // Timeout diam otomatis kirim
-        private IEnumerator SilenceTimeoutCoroutine()
-        {
-            yield return new WaitForSeconds(_silenceTimeout);
-
-            string json = _recognizer.FinalResult();
-            var data = JsonUtility.FromJson<VoskResult>(json);
-
-            string finalText = (data != null && !string.IsNullOrEmpty(data.text))
-                ? data.text
-                : _lastHypothesis;
-
-            if (!string.IsNullOrEmpty(finalText))
+            // Restart rekaman jika masih aktif
+            if (_isListening && !_isPaused)
             {
-                _lastHypothesis = "";
-
-                if (_inputField != null)
-                {
-                    _inputField.text = finalText;
-                    _inputField.textComponent.color = _normalColor;
-                }
-
-                OnResultReady?.Invoke(finalText);
-
-                if (_autoSend)
-                    SendToChat(finalText);
+                _shouldTranscribe = true;
+                _micRecord.StartRecord();
             }
-
-            _silenceCoroutine = null;
         }
 
         // Kirim teks ke chat
@@ -322,29 +244,20 @@ namespace AIRA.Voice
         {
             if (string.IsNullOrWhiteSpace(text)) return;
 
-            // Kalau ada ChatUIManager, pakai seperti biasa
             if (ChatUIManager.Instance != null)
             {
                 if (_inputField != null)
-                {
                     _inputField.text = text;
-                    _inputField.textComponent.color = _normalColor;
-                }
                 ChatUIManager.Instance.OnUserSubmit();
                 return;
             }
 
-            // Fallback: di scene Platformer, kirim langsung ke GameManager
             GameManager.Instance?.ProcessUserInput(text);
         }
 
-        // Bersihkan resource Vosk
+        // Cleanup saat komponen destroy
         private void OnDestroy()
         {
-            StopListening();
-            _recognizer?.Dispose();
-            _recognizer = null;
-
             if (Instance == this)
                 Instance = null;
         }

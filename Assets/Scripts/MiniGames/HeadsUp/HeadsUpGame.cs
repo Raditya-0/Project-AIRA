@@ -78,12 +78,15 @@ public class HeadsUpGame : MiniGameBase
 
     // Dipanggil PlayFlow saat game selesai
     public void OnGameEnd()
-        => GameManager.Instance?.ChangeState(GameManager.GameState.IDLE);
+    {
+        _ui?.ShowGamePanel(false); 
+        GameManager.Instance?.ChangeState(GameManager.GameState.IDLE);
+    }
 
     // Ucapkan teks langsung tanpa LLM
     public void AiraSpeakDirect(string text, string expression = "NEUTRAL")
     {
-        string cleaned = TextUtils.StripEmoji(text);
+        string cleaned = AiraController.StripExpressionTags(TextUtils.StripEmoji(text));
         ChatUIManager.Instance?.DisplayMessage("aira", cleaned);
         FindFirstObjectByType<AiraFloatingBubble>()?.ShowDialogBubble(cleaned, 4f);
         AiraController.Instance?.SetExpression(expression);
@@ -103,16 +106,6 @@ public class HeadsUpGame : MiniGameBase
     // Sembunyikan panel saat keluar minigame
     private void HandleStateChanged(GameManager.GameState prev, GameManager.GameState next)
     {
-        if (!IsGameActive) return;
-
-        bool isMiniGameContext =
-            next == GameManager.GameState.MINIGAME_INTRO   ||
-            next == GameManager.GameState.MINIGAME_PLAYING ||
-            next == GameManager.GameState.MINIGAME_RESULT  ||
-            next == GameManager.GameState.THINKING         ||
-            next == GameManager.GameState.SPEAKING;
-
-        if (!isMiniGameContext)
-            _ui?.ShowGamePanel(false);
+        // UI ditutup hanya via OnGameEnd(), bukan via state
     }
 }

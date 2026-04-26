@@ -15,8 +15,8 @@ Assets/StreamingAssets/Piper/piper.exe
 Assets/StreamingAssets/Piper/*.onnx
 Assets/StreamingAssets/Piper/*.onnx.json
 
-# Vosk STT model
-Assets/StreamingAssets/vosk-model*/
+# Whisper STT model
+Assets/StreamingAssets/*.bin
 
 # Emotion Classifier model 
 Assets/Models/*.onnx

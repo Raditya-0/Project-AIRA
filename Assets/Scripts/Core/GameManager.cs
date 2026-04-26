@@ -21,7 +21,8 @@ public class GameManager : MonoBehaviour
         MINIGAME_INTRO,     // flow awal: siapa duluan, kategori
         MINIGAME_PLAYING,   // game aktif
         MINIGAME_RESULT,    // AIRA comment hasil
-        MINIGAME_PLATFORMER, // platformer level aktif
+        MINIGAME_PLATFORMER,    // platformer level aktif
+        MINIGAME_SPACESHOOTER,  // space shooter aktif
         ERROR
     }
 
@@ -316,6 +317,20 @@ public class GameManager : MonoBehaviour
 
     // Kembali ke scene utama
     public void EndPlatformer()
+    {
+        SceneManager.LoadScene("MainScene");
+        ChangeState(GameState.IDLE);
+    }
+
+    // Mulai scene SpaceShooter
+    public void StartSpaceShooter()
+    {
+        ChangeState(GameState.MINIGAME_SPACESHOOTER);
+        SceneManager.LoadScene("SpaceShooter");
+    }
+
+    // Kembali dari SpaceShooter
+    public void EndSpaceShooter()
     {
         SceneManager.LoadScene("MainScene");
         ChangeState(GameState.IDLE);
