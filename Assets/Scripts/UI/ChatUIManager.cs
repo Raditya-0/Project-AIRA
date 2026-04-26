@@ -30,18 +30,8 @@ public class ChatUIManager : MonoBehaviour
     [SerializeField] private GameObject _userBubblePrefab;
     [SerializeField] private GameObject _aiBubblePrefab;
 
-    [Header("Dialog Bubble")]
-    [SerializeField] private GameObject      _dialogBubble;
-    [SerializeField] private TextMeshProUGUI _dialogBubbleText;
-    [SerializeField] private GameObject      _thinkingIndicatorInBubble;
-
-    [Header("Thinking Indicator")]
-    [SerializeField] private GameObject _thinkingIndicator; // Legacy indicator
-
     // Private State
-    private Coroutine _dialogHideCoroutine;
     private Coroutine _errorRecoveryCoroutine;
-    private bool      _bubbleShowingThinking;
 
 
     // Unity Lifecycle
@@ -57,32 +47,18 @@ public class ChatUIManager : MonoBehaviour
             _inputField.onSubmit.AddListener(OnInputFieldSubmit);
 
         ShowCancelButton(false);
-        ShowThinkingIndicator(false);
-        if (_thinkingIndicatorInBubble != null)
-            _thinkingIndicatorInBubble.SetActive(false);
-        SetDialogBubbleVisible(false);
     }
 
-    // Subscribe event state dan TTS
+    // Subscribe event state
     private void OnEnable()
     {
         GameManager.OnStateChanged += HandleStateChanged;
-        if (TTSManager.Instance != null)
-        {
-            TTSManager.Instance.OnSpeakStart += ShowFloatingBubble;
-            TTSManager.Instance.OnSpeakEnd   += HideFloatingBubble;
-        }
     }
 
-    // Lepas semua event listener
+    // Lepas event state
     private void OnDisable()
     {
         GameManager.OnStateChanged -= HandleStateChanged;
-        if (TTSManager.Instance != null)
-        {
-            TTSManager.Instance.OnSpeakStart -= ShowFloatingBubble;
-            TTSManager.Instance.OnSpeakEnd   -= HideFloatingBubble;
-        }
     }
 
     // Bersihkan singleton saat destroy
@@ -90,21 +66,6 @@ public class ChatUIManager : MonoBehaviour
     {
         if (Instance == this) Instance = null;
     }
-
-    // Tampilkan bubble saat TTS mulai
-    private void ShowFloatingBubble()
-    {
-        if (_dialogHideCoroutine != null)
-        {
-            StopCoroutine(_dialogHideCoroutine);
-            _dialogHideCoroutine = null;
-        }
-        SetDialogBubbleVisible(true);
-    }
-
-    // Sembunyikan bubble saat TTS selesai
-    private void HideFloatingBubble() =>
-        SetDialogBubbleVisible(false);
 
     // Input Handling
     public void OnUserSubmit()
@@ -126,7 +87,7 @@ public class ChatUIManager : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(text)) return;
         OnUserSubmit();
-        _inputField.ActivateInputField();  
+        _inputField.ActivateInputField();
     }
 
     public void OnCancel()
@@ -179,20 +140,6 @@ public class ChatUIManager : MonoBehaviour
 
         StartCoroutine(ScrollToBottomNextFrame());
     }
-    public void ShowDialogBubble(string text, float duration = 3f)
-    {
-        if (_dialogBubble == null) return;
-
-        ShowBubbleThinking(false);
-
-        if (_dialogBubbleText != null)
-            _dialogBubbleText.text = text;
-
-        SetDialogBubbleVisible(true);
-
-        if (_dialogHideCoroutine != null) StopCoroutine(_dialogHideCoroutine);
-        _dialogHideCoroutine = StartCoroutine(HideDialogBubbleAfter(duration));
-    }
 
     // UI State Helpers
     public void SetInputLocked(bool locked)
@@ -205,26 +152,6 @@ public class ChatUIManager : MonoBehaviour
     {
         if (_cancelButton != null)
             _cancelButton.gameObject.SetActive(show);
-    }
-
-    public void ShowThinkingIndicator(bool show)
-    {
-        if (_thinkingIndicator != null)
-            _thinkingIndicator.SetActive(show);
-    }
-
-    private void ShowBubbleThinking(bool thinking)
-    {
-        _bubbleShowingThinking = thinking;
-
-        if (_dialogBubbleText != null)
-            _dialogBubbleText.gameObject.SetActive(!thinking);
-
-        if (_thinkingIndicatorInBubble != null)
-            _thinkingIndicatorInBubble.SetActive(thinking);
-
-        if (thinking)
-            SetDialogBubbleVisible(true);
     }
 
     // State Machine Listener
@@ -242,75 +169,38 @@ public class ChatUIManager : MonoBehaviour
             case GameManager.GameState.LISTENING:
                 SetInputLocked(false);
                 ShowCancelButton(false);
-                ShowThinkingIndicator(false);
-                if (_bubbleShowingThinking)
-                {
-                    ShowBubbleThinking(false);
-                    SetDialogBubbleVisible(false);
-                }
                 break;
 
             case GameManager.GameState.THINKING:
                 SetInputLocked(true);
                 ShowCancelButton(true);
-                ShowThinkingIndicator(true);
-                if (_dialogHideCoroutine != null)
-                {
-                    StopCoroutine(_dialogHideCoroutine);
-                    _dialogHideCoroutine = null;
-                }
-                ShowBubbleThinking(true);
                 break;
 
             case GameManager.GameState.SPEAKING:
                 SetInputLocked(true);
                 ShowCancelButton(false);
-                ShowThinkingIndicator(false);
-                ShowBubbleThinking(false);
                 break;
 
             case GameManager.GameState.MINIGAME_INTRO:
             case GameManager.GameState.MINIGAME_PLAYING:
                 SetInputLocked(false);
                 ShowCancelButton(false);
-                ShowThinkingIndicator(false);
-                if (_bubbleShowingThinking)
-                {
-                    ShowBubbleThinking(false);
-                    SetDialogBubbleVisible(false);
-                }
                 break;
 
             case GameManager.GameState.MINIGAME_RESULT:
                 SetInputLocked(true);
                 ShowCancelButton(false);
-                ShowThinkingIndicator(false);
                 break;
 
             case GameManager.GameState.ERROR:
                 SetInputLocked(true);
                 ShowCancelButton(false);
-                ShowThinkingIndicator(false);
-                ShowBubbleThinking(false);
                 _errorRecoveryCoroutine = StartCoroutine(RecoverFromError(2f));
                 break;
         }
     }
 
     // Coroutine Helpers
-    private void SetDialogBubbleVisible(bool visible)
-    {
-        if (_dialogBubble != null)
-            _dialogBubble.SetActive(visible);
-    }
-
-    private IEnumerator HideDialogBubbleAfter(float seconds)
-    {
-        yield return new WaitForSeconds(seconds);
-        SetDialogBubbleVisible(false);
-        _dialogHideCoroutine = null;
-    }
-
     private IEnumerator RecoverFromError(float delay)
     {
         yield return new WaitForSeconds(delay);

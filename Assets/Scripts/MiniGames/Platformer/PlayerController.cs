@@ -89,6 +89,7 @@ namespace AIRA.MiniGames.Platformer
             if (_animator == null) return;
             _animator.SetBool("isRunning",  Mathf.Abs(_horizontalInput) > 0.01f);
             _animator.SetBool("isGrounded", IsGrounded);
+            _animator.SetFloat("yVelocity", _rb.linearVelocity.y);
         }
     }
 }

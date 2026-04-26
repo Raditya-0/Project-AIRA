@@ -19,6 +19,7 @@ namespace AIRA.MiniGames.Platformer
             if (isAira)
                 TTSManager.Instance?.EnqueueSpeak("Got the key!", "HAPPY");
 
+            // Spawn effect tanpa Animator
             if (_pickupEffect != null)
                 Instantiate(_pickupEffect, transform.position, Quaternion.identity);
 
