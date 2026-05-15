@@ -1,0 +1,14 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/Platformer%20Scene.uss?fileID=7433441132597879392&amp;guid=a8b08f48312de884abfacee6d8a91d61&amp;type=3#Platformer Scene"/>
+    <ui:VisualElement name="HUDContainer" style="flex-grow: 1; position: absolute; width: 100%; height: 100%;">
+        <ui:VisualElement name="TopBar" style="flex-grow: 0; flex-direction: row; width: 100%; padding-top: 30px; padding-right: 30px; padding-left: 30px; align-items: center;">
+            <ui:VisualElement name="LeftSpacer" style="flex-grow: 1;"/>
+            <ui:VisualElement name="LevelIndicator" style="flex-grow: 0; align-items: center; justify-content: center; background-color: rgba(62, 36, 25, 0.6); border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; padding-top: 8px; padding-bottom: 8px; padding-right: 25px; padding-left: 25px; color: rgb(255, 255, 255); -unity-background-image-tint-color: rgb(255, 255, 255);">
+                <ui:Label text="Level 1" name="LevelText" style="-unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Medium.ttf?fileID=12800000&amp;guid=d1e0d62062ee9004f96ec8c9263dd99f&amp;type=3#Poppins-Medium&quot;); font-size: 40px; -unity-text-align: middle-center; -unity-font-style: normal; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="RightSection" style="flex-grow: 1; align-items: flex-end;">
+                <ui:Button text="" name="PauseButton" style="width: 70px; height: 70px; border-top-left-radius: 15px; border-top-right-radius: 15px; border-bottom-right-radius: 15px; border-bottom-left-radius: 15px; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; background-color: rgba(253, 242, 227, 0.6); background-image: url(&quot;project://database/Assets/Asteroids%20Project%20Assets/Sprites/Pause%20Fill%20Black.png?fileID=2800000&amp;guid=2969c7cf252592041901ae9a8f3f1931&amp;type=3#Pause Fill Black&quot;); -unity-background-scale-mode: scale-and-crop; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 10px;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

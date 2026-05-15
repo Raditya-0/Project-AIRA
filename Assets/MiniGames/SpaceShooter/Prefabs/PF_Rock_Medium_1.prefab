@@ -124,7 +124,7 @@ PolygonCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -270,8 +270,8 @@ MonoBehaviour:
   m_maxHealth: 3
   m_collectiblePrefab: {fileID: 3963863663043804133, guid: 9f4ad6b3e8b5f08439cf9cc52c0cdcfa, type: 3}
   m_dropChance: 0
-  m_forcePower: 20
-  m_angularPower: 100
+  m_forcePower: 15
+  m_angularPower: 75
   m_smallerAsteroidPrefabs:
   - {fileID: 6385347364433392593, guid: 73720b43474cee449bf0e4bea56c0d91, type: 3}
   - {fileID: 6385347364433392593, guid: 8f2447d8d09fea44d8e1cee8be3cd3e7, type: 3}

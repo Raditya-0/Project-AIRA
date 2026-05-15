@@ -1,5 +1,134 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5360064834978353051
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7525932039984693775}
+  - component: {fileID: 1875024751410124180}
+  m_Layer: 7
+  m_Name: Audio_SFX_Aira
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7525932039984693775
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5360064834978353051}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5537775378262601092}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!82 &1875024751410124180
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5360064834978353051}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: -5204654785685185827, guid: 458f0567152067b4eaa0fa7a7a06e0db, type: 2}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &6111271501614691452
 GameObject:
   m_ObjectHideFlags: 0
@@ -18,6 +147,9 @@ GameObject:
   - component: {fileID: 1445997521057887919}
   - component: {fileID: 4069861778270737258}
   - component: {fileID: 8606494031591529911}
+  - component: {fileID: 6377719210877237981}
+  - component: {fileID: 8037732557209401050}
+  - component: {fileID: 3548693281502631413}
   m_Layer: 7
   m_Name: AiraCharacter
   m_TagString: AiraCharacter
@@ -39,6 +171,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3539002929783115294}
+  - {fileID: 7525932039984693775}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &1373822321507639253
@@ -137,7 +270,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 3
+  m_GravityScale: 1
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -229,8 +362,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0.01569295, y: -0.19723773}
-  m_Size: {x: 0.66930723, y: 0.6722233}
+  m_Offset: {x: 0.01569295, y: -0.109844804}
+  m_Size: {x: 0.66930723, y: 0.8105469}
   m_Direction: 0
 --- !u!114 &6998281103930556065
 MonoBehaviour:
@@ -291,7 +424,15 @@ MonoBehaviour:
   _groundLayer:
     serializedVersion: 2
     m_Bits: 256
+  _maxFollowYDiff: 3
+  _edgeRayDistance: 1
+  _edgeRayOffset: 0.4
+  _stepUpThreshold: 0.5
+  _stepUpForce: 2
+  _fallThresholdY: -10
   _followMode: 0
+  _sfx: {fileID: 6377719210877237981}
+  _arrivalRadius: 0.5
 --- !u!114 &8606494031591529911
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -307,6 +448,63 @@ MonoBehaviour:
   _vision: {fileID: 1445997521057887919}
   _follow: {fileID: 4069861778270737258}
   _commentCooldown: 10
+  _fallCommentCooldown: 5
+--- !u!114 &6377719210877237981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6111271501614691452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 939724fbdd4f6ad4b8daa9297d43727d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AIRA.MiniGames.Platformer.PlatformerSFX
+  _sfx: {fileID: 1875024751410124180}
+  _jumpClip: {fileID: 8300000, guid: 4294b048c632fba419d82a3b697970d0, type: 3}
+  _landClip: {fileID: 8300000, guid: f6798f5748018444dacc70f786dd7a72, type: 3}
+  _stepClip: {fileID: 8300000, guid: d9ee90a4b8bdcb84495daafb590d6574, type: 3}
+  _stepInterval: 0.3
+  _rb: {fileID: 3156487461926777732}
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 256
+  _groundCheckRadius: 0.15
+--- !u!114 &8037732557209401050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6111271501614691452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 310eb317c10a0424fac0a5880ebd444b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AIRA.MiniGames.Platformer.CameraBounds
+  _camera: {fileID: 0}
+  _paddingX: 1
+  _paddingY: 1
+--- !u!114 &3548693281502631413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6111271501614691452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 734dbe476f0565448a18752dcf12e985, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AIRA.MiniGames.Platformer.AiraPlanner
+  _vision: {fileID: 1445997521057887919}
+  _followSystem: {fileID: 4069861778270737258}
+  _airaAI: {fileID: 6998281103930556065}
+  _player: {fileID: 0}
+  _evalInterval: 0.5
+  _playerHintTimeout: 5
+  _playerTakeOverTime: 10
 --- !u!1 &7309902802934385989
 GameObject:
   m_ObjectHideFlags: 0

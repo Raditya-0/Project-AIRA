@@ -1,0 +1,40 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/MiniGames/SpaceShooter/UI%20Toolkit/Styles/Base%20Styles.uss?fileID=7433441132597879392&amp;guid=24cc14154bb45e64389bc887a786c5fa&amp;type=3#Base Styles"/>
+    <ui:VisualElement name="Container" style="flex-grow: 1; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px;">
+        <ui:VisualElement name="TopBar" class="top-bar container" style="color: rgb(28, 28, 28); background-color: rgba(0, 0, 0, 0.3);">
+            <ui:Label text="Score:" name="ScoreLabel" style="color: rgb(255, 255, 255); font-size: 30px; -unity-font-definition: url(&quot;project://database/Assets/MiniGames/SpaceShooter/Fonts/Orbitron/static/Orbitron-Bold.ttf?fileID=12800000&amp;guid=d25da54bab7af9441b351cc60758ac86&amp;type=3#Orbitron-Bold&quot;);"/>
+            <ui:Label text="0000" name="ScoreValue" data-source-type="ScoreManager, Assembly-CSharp" class="ScoreValue ScoreLabel">
+                <Bindings>
+                    <ui:DataBinding property="text" data-source-path="m_score" binding-mode="ToTarget"/>
+                </Bindings>
+            </ui:Label>
+            <ui:VisualElement name="Spacer" style="flex-grow: 1;"/>
+            <ui:VisualElement name="PauseBackground" style="flex-grow: 0; flex-direction: row; flex-shrink: 0; background-color: rgba(77, 77, 77, 0.3); padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 10px; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; align-items: stretch; justify-content: space-evenly; align-self: center; align-content: center; border-left-color: rgba(0, 0, 0, 0); border-right-color: rgba(0, 0, 0, 0); border-top-color: rgba(0, 0, 0, 0); border-bottom-color: rgba(0, 0, 0, 0);">
+                <ui:VisualElement name="PauseIcon" class="lives-icon" style="width: 25px; background-size: 50px 50px; flex-grow: 0; background-position-x: center; background-image: url(&quot;project://database/Assets/Asteroids%20Project%20Assets/Sprites/PauseWhite.png?fileID=21300000&amp;guid=07ce79bf9fd9bd3408348cd028ff2776&amp;type=3#PauseWhite&quot;); flex-shrink: 0; align-items: auto; height: auto; background-position-y: center; -unity-background-scale-mode: scale-to-fit; background-color: rgba(0, 0, 0, 0); -unity-background-image-tint-color: rgb(255, 255, 255); align-content: auto;"/>
+                <ui:Button text="PAUSE" name="PauseButton" style="flex-direction: column; -unity-font-definition: url(&quot;project://database/Assets/UI%20Toolkit/UnityThemes/UnityDefaultRuntimeTheme.tss?fileID=2230732570650464555&amp;guid=27dbe5a97c6e582478e507b7f563e911&amp;type=3#NotInter-Regular&quot;); background-color: rgba(188, 188, 188, 0); border-left-color: rgba(149, 149, 149, 0); border-right-color: rgba(149, 149, 149, 0); border-top-color: rgba(149, 149, 149, 0); border-bottom-color: rgba(149, 149, 149, 0); color: rgb(255, 255, 255); font-size: 20px; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; -unity-font-style: bold;"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="Spacer" style="flex-grow: 1;"/>
+            <ui:VisualElement name="LivesIcon" class="lives-icon" style="width: 0; background-size: 50px 50px; flex-grow: 1; background-position-x: right 0;"/>
+            <ui:Label text="0" name="LivesValue" data-source-type="ScoreManager, Assembly-CSharp" enable-rich-text="true" class="ScoreValue ScoreLabel">
+                <Bindings>
+                    <ui:DataBinding property="text" data-source-path="m_currentLives" binding-mode="ToTarget"/>
+                </Bindings>
+            </ui:Label>
+        </ui:VisualElement>
+        <ui:VisualElement name="GameOver" class="game-over-background hidden" style="transition-duration: 0.5s;">
+            <ui:VisualElement name="CenterPanel" class="game-over-center" style="height: 350px;">
+                <ui:Label text="GAME OVER" name="GameOver" style="color: rgb(255, 133, 0); -unity-font-definition: url(&quot;project://database/Assets/MiniGames/SpaceShooter/Fonts/Orbitron/static/Orbitron-ExtraBold.ttf?fileID=12800000&amp;guid=950cf2814e9068b4bb108bd4fbb738e6&amp;type=3#Orbitron-ExtraBold&quot;); -unity-text-align: middle-center; font-size: 60px; -unity-text-outline-color: rgb(120, 63, 0); -unity-text-outline-width: 3px;"/>
+                <ui:VisualElement name="Spacer" style="flex-grow: 1;"/>
+                <ui:VisualElement name="Restart" class="button" style="background-color: rgb(255, 133, 0);">
+                    <ui:Label text="RESTART" name="ButtonLabel" class="button-label"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="Retry" class="button" style="background-color: rgb(255, 133, 0);">
+                    <ui:Label text="RETRY" name="ButtonLabel" class="button-label"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="Exit" class="button" style="background-color: rgb(255, 133, 0);">
+                    <ui:Label text="EXIT TO DESKTOP" name="ButtonLabel" class="button-label"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

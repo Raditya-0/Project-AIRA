@@ -5,6 +5,7 @@ using System.IO;
 using UnityEngine;
 using Newtonsoft.Json;
 using Unity.InferenceEngine;
+using AIRA.Core;
 
 namespace AIRA.Emotion
 {
@@ -13,9 +14,7 @@ namespace AIRA.Emotion
     {
         [Header("Model Settings")]
         [SerializeField] private ModelAsset _modelAsset;
-        [SerializeField] private string _labelsFileName = "emotion_labels.json";
-        [SerializeField] private string _vocabFileName  = "vocab.txt";
-        [SerializeField] private int    _maxLength      = 128;
+        [SerializeField] private int        _maxLength = 128;
 
         [Header("Runtime Settings")]
         [SerializeField] private float _confidenceThreshold = 0.35f;
@@ -31,9 +30,6 @@ namespace AIRA.Emotion
         private Worker          _worker;
         private BertTokenizer   _tokenizer;
         private EmotionMetadata _metadata;
-
-        private string StreamingAssetsBase =>
-            Path.Combine(Application.streamingAssetsPath, "EmotionClassifier");
 
         // Inisialisasi singleton Awake
         private void Awake()
@@ -61,21 +57,20 @@ namespace AIRA.Emotion
             _worker       = new Worker(_runtimeModel, BackendType.GPUCompute);
             Debug.Log("[EmotionClassifier] Model ONNX berhasil dimuat.");
 
-            // Load vocab
-            string vocabPath = Path.Combine(StreamingAssetsBase, _vocabFileName);
+            // Load vocab tokenizer
+            string vocabPath = PathConfig.EmotionVocab;
             if (!File.Exists(vocabPath))
             {
-                Debug.LogError($"[EmotionClassifier] Vocab tidak ditemukan: {vocabPath}");
+                Debug.LogWarning($"[EmotionClassifier] Vocab tidak ditemukan: {vocabPath}");
                 yield break;
             }
             _tokenizer = new BertTokenizer(vocabPath, _maxLength);
-            Debug.Log("[EmotionClassifier] Vocab berhasil dimuat.");
 
             // Load label metadata
-            string labelsPath = Path.Combine(StreamingAssetsBase, _labelsFileName);
+            string labelsPath = PathConfig.EmotionLabels;
             if (!File.Exists(labelsPath))
             {
-                Debug.LogError($"[EmotionClassifier] Labels tidak ditemukan: {labelsPath}");
+                Debug.LogWarning($"[EmotionClassifier] Labels tidak ditemukan: {labelsPath}");
                 yield break;
             }
             string json = File.ReadAllText(labelsPath);

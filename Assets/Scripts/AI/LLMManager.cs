@@ -25,6 +25,9 @@ namespace AIRA.AI
         [SerializeField] private LLMCharacter _extractionCharacter;
     #endif
 
+        // Properti ready LLM
+        public bool IsReady => _isReady;
+
         // Private State
         private CancellationTokenSource _cts;
         private bool _isReady;
@@ -188,11 +191,11 @@ namespace AIRA.AI
         // Stub Data
         private static readonly string[] StubResponses =
         {
-            "[HAPPY] Hei! Ini jawaban stub dari AIRA. LLMUnity belum terhubung nih!",
-            "[THINKING] Hmm, aku lagi pura-pura mikir keras... Ini masih stub response ya!",
-            "[NEUTRAL] Oke oke, aku dengar kamu! Tapi LLM-nya belum nyambung.",
-            "[SHY] Eh, sebenarnya aku belum bisa jawab beneran... ini masih testing!",
-            "[SURPRISED] Wah kamu nulis sesuatu! Sayang aku belum bisa baca beneran hehe.",
+            "[HAPPY] Hey! This is a stub response from AIRA. LLMUnity is not connected yet!",
+            "[THINKING] Hmm, pretending to think really hard... This is still a stub response!",
+            "[NEUTRAL] Okay okay, I hear you! But the LLM is not connected yet.",
+            "[SHY] Ehh, I can't actually answer for real yet... this is still testing!",
+            "[SURPRISED] Oh you wrote something! Too bad I can't read it for real yet hehe.",
         };
     }
 }

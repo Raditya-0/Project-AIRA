@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using AIRA.Character;
+using AIRA.Core;
 using AIRA.Voice;
 using AIRA.AI;
 
@@ -17,13 +18,14 @@ namespace AIRA.MiniGames.Platformer
         [SerializeField] private AiraFollowSystem _follow;
 
         [Header("Comment Settings")]
-        [SerializeField] private float _commentCooldown = 10f;
+        [SerializeField] private float _commentCooldown = 25f;
 
         [Header("Fall Comment Settings")]
-        [SerializeField] private float _fallCommentCooldown = 5f;
+        [SerializeField] private float _fallCommentCooldown = 10f;
         private float _lastFallCommentTime;
 
         private HashSet<string> _commentedObjects = new();
+        private readonly HashSet<string> _firedEvents  = new();
         private float           _lastCommentTime;
         private bool            _keySeenFirstTime;
         private bool            _endSeenFirstTime;
@@ -38,9 +40,7 @@ namespace AIRA.MiniGames.Platformer
         // Subscribe semua event
         private void OnEnable()
         {
-            AiraFollowSystem.OnPlayerIdle20s     += OnPlayerIdle20s;
             AiraFollowSystem.OnPlayerIdle60s     += OnPlayerIdle60s;
-            AiraFollowSystem.OnPlayerResumed     += OnPlayerResumed;
             AiraFollowSystem.OnPlayerFellIntoGap += HandlePlayerFell;
             AiraFollowSystem.OnAiraFellIntoGap   += HandleAiraFell;
             PlatformerGame.OnKeyCollected        += OnKeyCollected;
@@ -50,9 +50,7 @@ namespace AIRA.MiniGames.Platformer
         // Lepas semua event
         private void OnDisable()
         {
-            AiraFollowSystem.OnPlayerIdle20s     -= OnPlayerIdle20s;
             AiraFollowSystem.OnPlayerIdle60s     -= OnPlayerIdle60s;
-            AiraFollowSystem.OnPlayerResumed     -= OnPlayerResumed;
             AiraFollowSystem.OnPlayerFellIntoGap -= HandlePlayerFell;
             AiraFollowSystem.OnAiraFellIntoGap   -= HandleAiraFell;
             PlatformerGame.OnKeyCollected        -= OnKeyCollected;
@@ -90,7 +88,13 @@ namespace AIRA.MiniGames.Platformer
             bool highPriority = false,
             string playerInput = "")
         {
+            bool isFallEvent = eventType == "player_fell_gap"
+                            || eventType == "aira_fell_gap";
+
+            if (!isFallEvent && _firedEvents.Contains(eventType)) return;
             if (!highPriority && !CanComment()) return;
+
+            _firedEvents.Add(eventType);
             _lastCommentTime = Time.time;
             StartCoroutine(CommentRoutine(eventType, playerInput));
         }
@@ -144,6 +148,35 @@ namespace AIRA.MiniGames.Platformer
                 "aira_fell_gap" =>
                     "Aira just fell into a gap while following the player! React in first person, surprised or embarrassed. Keep it short, 1-2 sentences. " +
                     "Start with ONE expression tag: [SURPRISED] or [SHY]",
+                "aira_going_to_plate" =>
+                    "You are walking to the pressure plate so the player can pass through the door. " +
+                    "Tell the player in 1-2 sentences to go through the door first while you hold the plate. " +
+                    "Start with ONE expression tag: [HAPPY] or [THINKING]",
+                "aira_holding_plate" =>
+                    "You are standing on the pressure plate and holding it down. " +
+                    "Excitedly tell the player to go to the endpoint now. 1 short sentence. " +
+                    "Start with ONE expression tag: [HAPPY]",
+                "coop_success" =>
+                    "You both just completed the cooperative section together! Celebrate the teamwork in 1 sentence. " +
+                    "Start with ONE expression tag: [HAPPY]",
+                "aira_frustrated_ignored" =>
+                    "The player walked right past the pressure plate without stopping. " +
+                    "React with slight passive-aggressive frustration, but keep it cute and short. " +
+                    "Start with ONE expression tag: [SAD] or [SURPRISED]",
+                "aira_frustrated_abandoned" =>
+                    "The player has left the pressure plate area multiple times now. " +
+                    "React more emotionally — more frustrated than before. 1-2 sentences. " +
+                    "Start with ONE expression tag: [SAD]",
+                "aira_hint_comeback" =>
+                    "Gently hint to the player to come back to the pressure plate. Not angry, just a soft reminder. 1 sentence. " +
+                    "Start with ONE expression tag: [THINKING]",
+                "level_transition_2" =>
+                    "You're about to move to the next area with the player. " +
+                    "Say something short and excited about going together to the next challenge. " +
+                    "1 sentence max. Start with [HAPPY]",
+                "level_transition_3" =>
+                    "This is the final area. Say something meaningful about how far you've come together. " +
+                    "1 sentence max. Start with [HAPPY] or [NEUTRAL]",
                 _ =>
                     "Respond naturally in 1-2 sentences. " +
                     "Don't repeat what you already commented about. " +
@@ -154,14 +187,8 @@ namespace AIRA.MiniGames.Platformer
             return prompt;
         }
 
-        // Handler idle 20 detik
-        private void OnPlayerIdle20s()  => TriggerComment("player_idle_hint");
-
         // Handler idle 60 detik
         private void OnPlayerIdle60s()  => TriggerComment("player_idle_long", true);
-
-        // Handler player bergerak lagi
-        private void OnPlayerResumed()  => TriggerComment("player_resumed");
 
         // Handler key diambil
         private void OnKeyCollected()   => TriggerComment("key_collected", true);
@@ -172,11 +199,36 @@ namespace AIRA.MiniGames.Platformer
         // Dipanggil saat stacking terjadi
         public void OnStacking()        => TriggerComment("stacking", true);
 
+        // Aira mulai jalan ke plate
+        public void OnAiraGoingToPlate()        => TriggerComment("aira_going_to_plate");
+
+        // Aira sudah tahan plate
+        public void OnAiraHoldingPlate()        => TriggerComment("aira_holding_plate");
+
+        // Kerja sama coop berhasil
+        public void OnCoopSuccess()             => TriggerComment("coop_success", true);
+
+        // Aira frustrasi diabaikan player
+        public void OnAiraFrustratedIgnored()   => TriggerComment("aira_frustrated_ignored", true);
+
+        // Aira frustrasi ditinggal berkali-kali
+        public void OnAiraFrustratedAbandoned() => TriggerComment("aira_frustrated_abandoned", true);
+
+        // Hint halus balik ke plate
+        public void OnAiraHintComeback()        => TriggerComment("aira_hint_comeback");
+
         // Terima input player via STT
         public void OnPlayerSpeech(string input)
         {
             if (!STTEnabled) return;
             TriggerComment("player_speech", true, input);
+        }
+
+        // Komentar sebelum pindah level
+        public void OnLevelTransition(int nextLevel)
+        {
+            string eventType = $"level_transition_{nextLevel}";
+            TriggerComment(eventType, true);
         }
 
         // Handler player jatuh ke jurang

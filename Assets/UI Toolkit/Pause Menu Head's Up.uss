@@ -1,0 +1,18 @@
+
+
+
+
+:root {
+}
+
+.button {
+    height: 55px;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    border-bottom-right-radius: 15px;
+    border-bottom-left-radius: 15px;
+    background-color: rgb(45, 26, 18);
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+}

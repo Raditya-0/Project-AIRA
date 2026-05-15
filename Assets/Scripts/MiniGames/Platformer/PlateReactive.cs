@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace AIRA.MiniGames.Platformer
 {
@@ -7,50 +9,77 @@ namespace AIRA.MiniGames.Platformer
         [SerializeField] private Vector2 _offsetOff = Vector2.zero;
         [SerializeField] private Vector2 _offsetOn;
         [SerializeField] private float _moveSpeed = 5f;
-        [SerializeField] private PressurePlate _linkedPlate;
+
+        [SerializeField] public string blockDesc = "blocks path";
+
+        // Daftar plate yang dipantau
+        [SerializeField] private List<PressurePlate> _linkedPlates = new();
 
         private Vector2 _startPosition;
         private Vector2 _currentOffset;
 
-        // simpan posisi awal objek
+        // Hitung jumlah plate aktif
+        private int _activePlateCount;
+
+        // Cek apakah object sedang blocking
+        public bool IsBlocking =>
+            Vector2.Distance(transform.position, _startPosition + _offsetOff) < 0.1f;
+
+        // Simpan posisi awal objek
         private void Awake()
         {
-            _startPosition = transform.position;
-            _currentOffset = _offsetOff;
+            _startPosition  = transform.position;
+            _currentOffset  = _offsetOff;
         }
 
-        // subscribe event plate
+        // Subscribe plate dan daftarkan ke registry
         private void OnEnable()
         {
-            if (_linkedPlate == null) return;
-            _linkedPlate.OnPressed.AddListener(MoveToOn);
-            _linkedPlate.OnReleased.AddListener(MoveToOff);
+            InteractableRegistry.RegisterReactive(this);
+            foreach (var plate in _linkedPlates)
+            {
+                if (plate == null) continue;
+                plate.OnPressed.AddListener(OnAnyPlatePressed);
+                plate.OnReleased.AddListener(OnAnyPlateReleased);
+            }
         }
 
-        // unsubscribe event plate
+        // Unsubscribe plate dan hapus dari registry
         private void OnDisable()
         {
-            if (_linkedPlate == null) return;
-            _linkedPlate.OnPressed.RemoveListener(MoveToOn);
-            _linkedPlate.OnReleased.RemoveListener(MoveToOff);
+            InteractableRegistry.UnregisterReactive(this);
+            foreach (var plate in _linkedPlates)
+            {
+                if (plate == null) continue;
+                plate.OnPressed.RemoveListener(OnAnyPlatePressed);
+                plate.OnReleased.RemoveListener(OnAnyPlateReleased);
+            }
         }
 
-        // lerp posisi tiap frame
+        // Lerp posisi tiap frame
         private void Update()
         {
-            transform.position = Vector2.Lerp(transform.position, _startPosition + _currentOffset, _moveSpeed * Time.deltaTime);
+            transform.position = Vector2.Lerp(
+                transform.position,
+                _startPosition + _currentOffset,
+                _moveSpeed * Time.deltaTime
+            );
         }
 
-        // set offset posisi aktif
-        private void MoveToOn()
+        // Tambah hitungan plate aktif
+        private void OnAnyPlatePressed()
         {
-            _currentOffset = _offsetOn;
+            _activePlateCount++;
+            if (_activePlateCount == 1)
+                _currentOffset = _offsetOn;
         }
 
-        // set offset posisi nonaktif
-        private void MoveToOff()
+        // Kurangi hitungan plate aktif
+        private void OnAnyPlateReleased()
         {
-            _currentOffset = _offsetOff;
+            _activePlateCount = Mathf.Max(0, _activePlateCount - 1);
+            if (_activePlateCount == 0)
+                _currentOffset = _offsetOff;
         }
     }
 }

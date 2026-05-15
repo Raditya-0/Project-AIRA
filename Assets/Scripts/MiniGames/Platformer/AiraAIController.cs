@@ -11,7 +11,8 @@ namespace AIRA.MiniGames.Platformer
             Idle,
             Following,
             ActAsBase,
-            OnPlayerHead
+            OnPlayerHead,
+            HoldingPlate
         }
 
         [Header("References")]
@@ -64,11 +65,28 @@ namespace AIRA.MiniGames.Platformer
                     _followSystem?.SetEnabled(false);
                     break;
 
+                case AiraState.HoldingPlate:
+                    _followSystem?.SetEnabled(false);
+                    _rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+                    break;
+
                 case AiraState.Idle:
                     _followSystem?.SetEnabled(false);
                     _rb.linearVelocity = Vector2.zero;
                     break;
             }
+        }
+
+        // Freeze Aira di posisi plate
+        public void StartHoldingPlate()
+        {
+            TransitionTo(AiraState.HoldingPlate);
+        }
+
+        // Kembali follow normal
+        public void StopHoldingPlate()
+        {
+            TransitionTo(AiraState.Following);
         }
 
         // Dipanggil StackingSystem saat player naik

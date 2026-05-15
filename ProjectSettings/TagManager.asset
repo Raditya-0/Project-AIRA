@@ -6,6 +6,10 @@ TagManager:
   tags:
   - AiraCharacter
   - Key
+  - Bullet
+  - Asteroid
+  - Collectible
+  - Companion
   layers:
   - Default
   - TransparentFX

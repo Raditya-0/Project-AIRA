@@ -9,7 +9,7 @@ UserSettings/
 MemoryCaptures/
 
 # Model AI & TTS 
-Assets/Models/*.gguf
+Assets/StreamingAssets/*.gguf
 Assets/Audio/voices/*.onnx
 Assets/StreamingAssets/Piper/piper.exe
 Assets/StreamingAssets/Piper/*.onnx
@@ -19,7 +19,7 @@ Assets/StreamingAssets/Piper/*.onnx.json
 Assets/StreamingAssets/*.bin
 
 # Emotion Classifier model 
-Assets/Models/*.onnx
+Assets/Model/*.onnx
 Assets/StreamingAssets/EmotionClassifier/vocab.txt
 Assets/StreamingAssets/EmotionClassifier/emotion_labels.json
 
@@ -30,7 +30,6 @@ Assets/StreamingAssets/LlamaLib-v2.0.5/linux-x64/
 Assets/StreamingAssets/LlamaLib-v2.0.5/win-x64/native/*.dll
 
 # Runtime memory saves 
-Assets/../*.json
 **/aira_memory.json
 **/aira_session.json
 

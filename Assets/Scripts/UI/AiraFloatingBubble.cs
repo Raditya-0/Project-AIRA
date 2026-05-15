@@ -39,6 +39,7 @@ namespace AIRA.UI
                 _canvasGroup = gameObject.AddComponent<CanvasGroup>();
             _canvasGroup.alpha         = 0f;
             _canvasGroup.blocksRaycasts = false;
+            if (_bubbleText != null) _bubbleText.text = "";
 
             GameManager.OnStateChanged += HandleStateChanged;
         }
@@ -141,7 +142,7 @@ namespace AIRA.UI
                 _hideCoroutine = null;
             }
             _canvasGroup.alpha          = 1f;
-            _canvasGroup.blocksRaycasts = true;
+            _canvasGroup.blocksRaycasts = false;
             ShowThinking(false);
         }
 
@@ -183,11 +184,16 @@ namespace AIRA.UI
                 case GameManager.GameState.SPEAKING:
                     ShowThinking(false);
                     _canvasGroup.alpha          = 1f;
-                    _canvasGroup.blocksRaycasts = true;
+                    _canvasGroup.blocksRaycasts = false;
                     break;
 
                 case GameManager.GameState.IDLE:
                     HideBubble();
+                    break;
+
+                case GameManager.GameState.MINIGAME_PLAYING:
+                case GameManager.GameState.MINIGAME_INTRO:
+                    _canvasGroup.blocksRaycasts = false;
                     break;
 
                 case GameManager.GameState.MINIGAME_PLATFORMER:

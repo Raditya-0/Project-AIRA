@@ -13,7 +13,7 @@ Aplikasi *companion* interaktif berbasis Live2D yang ditenagai oleh Local AI (SL
 
 ---
 
-## Panduan Setup (Wajib Dibaca)
+## Panduan Setup 
 
 Karena batasan ukuran file di GitHub (maksimal 100MB), file model AI dan beberapa *library* mesin utama (LlamaLib) tidak disertakan secara langsung di dalam repository ini.
 
@@ -33,7 +33,7 @@ AIRA membutuhkan model **Qwen 2.5 3B (Q4\_K\_M)** sebagai otak utamanya.
 
 - **Link Download:** [Unduh dari Hugging Face](https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF?show_file_info=qwen2.5-3b-instruct-q4_k_m.gguf) (~2.2 GB)
 - **Penempatan:** Setelah selesai diunduh, pastikan nama filenya adalah `qwen2.5-3b-instruct-q4_k_m.gguf` dan pindahkan file tersebut ke dalam folder:
-  `Assets/Models/qwen2.5-3b-instruct-q4_k_m.gguf`
+  `Assets/StreamingAssets/qwen2.5-3b-instruct-q4_k_m.gguf`
 
 ### 3. Restore LLMUnity Dependencies
 
@@ -42,7 +42,7 @@ File *binary* raksasa (`.dll`) milik LLMUnity sengaja tidak di-*push* ke GitHub.
 1. Buka project menggunakan **Unity 6.3 LTS (6000.3.11f1)**.
 2. Tunggu beberapa saat biarkan Unity melakukan **Resolving Packages**.
 3. Unity/LLMUnity biasanya akan otomatis mengunduh ulang file `.dll` yang hilang di belakang layar.
-4. **Troubleshooting:** Jika terjadi *error* Llama.cpp tidak ditemukan saat di-Play, buka **Window → Package Manager**, cari **LLMUnity**, lalu lakukan *Remove* dan tambahkan ulang via Git URL (`https://github.com/undreamai/LLMUnity.git`) untuk memancing unduhan *library*-nya.
+4. **Troubleshooting:** Jika terjadi *error* Llama.cpp tidak ditemukan saat di-Play, buka **Window -> Package Manager**, cari **LLMUnity**, lalu lakukan *Remove* dan tambahkan ulang via Git URL (`https://github.com/undreamai/LLMUnity.git`) untuk memancing unduhan *library*-nya.
 
 ### 4. Download & Setup Piper TTS
 
@@ -63,21 +63,24 @@ AIRA menggunakan Piper TTS untuk suara karakter.
 AIRA menggunakan **Whisper** (via [whisper.unity](https://github.com/Macoron/whisper.unity)) untuk speech recognition offline — menggantikan Vosk.
 
 **Install package whisper.unity:**
-1. Buka **Window → Package Manager**
-2. Klik **+** → **Add package from git URL**
+
+1. Buka **Window -> Package Manager**
+2. Klik **+** -> **Add package from git URL**
 3. Masukkan: https://github.com/Macoron/whisper.unity.git?path=/Packages/com.whisper.unity
 
 **Download model Whisper:**
+
 - **Rekomendasi:** `ggml-small.en-q5_1.bin` — balance antara speed dan akurasi
 - **Link Download:** [Hugging Face — ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
 - **Penempatan:** `Assets/StreamingAssets/ggml-small.en-q5_1.bin`
 
 **Setup di Unity Inspector:**
+
 1. Di GameObject `STTManager`, tambah component `WhisperManager`
 2. Tambah component `MicrophoneRecord`
-3. Di `WhisperManager` → `Model Path` → isi path ke file `.bin` di StreamingAssets
-4. Di `MicrophoneRecord` → aktifkan `Use Vad`, `Vad Stop`, `Drop Vad Part`
-5. `Vad Stop Time` → `1.5`
+3. Di `WhisperManager` -> `Model Path` -> isi path ke file `.bin` di StreamingAssets
+4. Di `MicrophoneRecord` -> aktifkan `Use Vad`, `Vad Stop`, `Drop Vad Part`
+5. `Vad Stop Time` -> `1.5`
 
 > **Catatan:** Jika mic tidak terdeteksi dengan benar, gunakan **Microphone Selector dropdown** di UI untuk memilih input device yang sesuai.
 
@@ -85,14 +88,15 @@ AIRA menggunakan **Whisper** (via [whisper.unity](https://github.com/Macoron/whi
 
 Fitur klasifikasi emosi membutuhkan model ONNX tambahan.
 Bisa dilewati — fitur ini bisa dimatikan via toggle
-`AIRASettings → Use Emotion Classifier` di Inspector.
+`AIRASettings -> Use Emotion Classifier` di Inspector.
 
 Jika ingin mengaktifkan:
+
 - **Download model:** [DistilBERT Emotion Classifier](https://www.kaggle.com/models/raditya0/distilbert-emotion-classifier)
-- **Penempatan:** `Assets/StreamingAssets/EmotionClassifier/`
-  - `model.onnx`
-  - `vocab.txt`
-  - `emotion_labels.json`
+- **Penempatan:** 
+  - `Assets/StreamingAssets/EmotionClassifier/vocab.txt`
+  - `Assets/StreamingAssets/EmotionClassifier/emotion_labels.json`
+  - `Assets/Model/model.onnx`
 
 ### 7. Buka Scene & Jalankan
 
@@ -106,11 +110,11 @@ Jika ingin mengaktifkan:
 
 AIRA saat ini memiliki dua mini-game yang bisa dimainkan bersama:
 
-| Game | Status | Deskripsi |
-|------|--------|-----------|
-| **Head's Up!** | Playable | Tebak kata — Aira kasih clue, player tebak |
-| **Platformer Coop** | In Progress | Puzzle platformer kooperatif bersama Aira |
-| **Space Shooter Coop** | In Progress | Top-down shooter, Aira sebagai co-pilot |
+| Game                         | Status      | Deskripsi                                   |
+| ---------------------------- | ----------- | ------------------------------------------- |
+| **Head's Up!**         | Playable    | Tebak kata — Aira kasih clue, player tebak |
+| **Platformer Coop**    | Playable | Puzzle platformer kooperatif bersama Aira   |
+| **Space Shooter Coop** | Playable | Top-down shooter, Aira sebagai co-pilot     |
 
 ---
 

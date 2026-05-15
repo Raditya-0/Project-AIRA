@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using AIRA.AI;
 using AIRA.UI;
 using AIRA.Voice;
 
@@ -32,6 +33,10 @@ namespace AIRA.MiniGames.Platformer
         public override bool IsGameActive => _isActive;
         private bool _isActive;
 
+        // Flag level sedang menyelesaikan routine
+        public bool IsCompletingLevel => _isCompleting;
+        private bool _isCompleting;
+
         // Awake singleton setup
         private void Awake()
         {
@@ -43,6 +48,12 @@ namespace AIRA.MiniGames.Platformer
             Instance = this;
         }
 
+        // Panggil StartGame saat scene load
+        private void Start()
+        {
+            StartGame();
+        }
+
         // Hancurkan instance saat destroy
         private void OnDestroy()
         {
@@ -52,12 +63,40 @@ namespace AIRA.MiniGames.Platformer
         // Mulai game level
         public override void StartGame()
         {
-            KeyCollected = false;
-            EndReached   = false;
-            _isActive    = true;
+            GameManager.Instance?.RegisterMiniGame(this);
+            KeyCollected  = false;
+            EndReached    = false;
+            _isActive     = true;
+            _isCompleting = false;
 
             if (_player != null && _playerSpawn != null)
+            {
+                var rb = _player.GetComponent<Rigidbody2D>();
+                if (rb != null)
+                {
+                    rb.gravityScale = 0f;
+                    rb.linearVelocity = Vector2.zero;
+                    rb.angularVelocity = 0f;
+                    rb.position = _playerSpawn.position;
+                    rb.gravityScale = 3f;
+                }
                 _player.transform.position = _playerSpawn.position;
+
+                // Snap player ke ground pakai raycast
+                var rbSnap = _player.GetComponent<Rigidbody2D>();
+                RaycastHit2D hit = Physics2D.Raycast(
+                    _playerSpawn.position,
+                    Vector2.down,
+                    10f,
+                    LayerMask.GetMask("Ground")
+                );
+                if (hit.collider != null)
+                {
+                    float snapY = hit.point.y + 0.5f;
+                    rbSnap.position = new Vector2(_playerSpawn.position.x, snapY);
+                    _player.transform.position = new Vector2(_playerSpawn.position.x, snapY);
+                }
+            }
 
             if (_airaAI != null && _airaSpawn != null)
                 _airaAI.transform.position = _airaSpawn.position;
@@ -65,7 +104,6 @@ namespace AIRA.MiniGames.Platformer
             _key?.gameObject.SetActive(true);
             _endPoint?.ResetEndPoint();
 
-            GameManager.Instance?.ChangeState(GameManager.GameState.MINIGAME_PLATFORMER);
             Debug.Log("[PlatformerGame] Level dimulai.");
         }
 
@@ -73,11 +111,26 @@ namespace AIRA.MiniGames.Platformer
         public override void EndGame()
         {
             _isActive = false;
-            GameManager.Instance?.EndPlatformer();
+            GameManager.Instance?.UnregisterMiniGame();
+            LoadNextLevelOrEnd(SceneManager.GetActiveScene().name);
         }
 
-        // Input user diabaikan (game controller)
-        public override void ProcessUserResponse(string input) { }
+        // Muat level atau akhiri platformer
+        public void LoadNextLevelOrEnd(string currentSceneName)
+        {
+            string[] levels = { "Platformer_Level01", "Platformer_Level02" };
+            int index = System.Array.IndexOf(levels, currentSceneName);
+            if (index >= 0 && index < levels.Length - 1)
+                SceneManager.LoadScene(levels[index + 1]);
+            else
+                GameManager.Instance?.EndPlatformer();
+        }
+
+        // Forward input ke LLM pipeline
+        public override void ProcessUserResponse(string input)
+        {
+            GameManager.Instance?.SendToLLM(input);
+        }
 
         // Catat key berhasil diambil
         public void NotifyKeyCollected()
@@ -109,13 +162,30 @@ namespace AIRA.MiniGames.Platformer
         // Komentar AIRA lalu selesai
         private IEnumerator LevelCompleteRoutine()
         {
-            _isActive = false;
-            AiraSpeak("We did it! Level complete!", "HAPPY");
-            // Tunggu TTS selesai
-            yield return new WaitUntil(() => !TTSManager.Instance.IsSpeaking);
-            // Delay supaya tidak terlalu tiba-tiba
-            yield return new WaitForSeconds(1f);
-            GameManager.Instance?.EndPlatformer();
+            _isActive     = false;
+            _isCompleting = true;
+
+            STTManager.Instance?.StopListening();
+            LLMManager.Instance?.CancelCurrent();
+
+            // Tentukan next level untuk konteks komentar
+            int nextLevel = GetNextLevelIndex();
+            PlatformerCommentator.Instance?.OnLevelTransition(nextLevel);
+
+            yield return new WaitUntil(() =>
+                TTSManager.Instance == null || !TTSManager.Instance.IsSpeaking);
+            yield return new WaitForSeconds(0.5f);
+
+            LoadNextLevelOrEnd(SceneManager.GetActiveScene().name);
+        }
+
+        // Hitung index level berikutnya
+        private int GetNextLevelIndex()
+        {
+            string[] levels  = { "Platformer_Level01", "Platformer_Level02" };
+            string   current = SceneManager.GetActiveScene().name;
+            int      index   = System.Array.IndexOf(levels, current);
+            return index >= 0 ? index + 2 : levels.Length + 1;
         }
 
         // Update teks bubble dan jalankan TTS

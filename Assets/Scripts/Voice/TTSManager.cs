@@ -6,6 +6,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 using AIRA.Character;
+using AIRA.Core;
 
 namespace AIRA.Voice
 {
@@ -13,10 +14,6 @@ namespace AIRA.Voice
     {
         // Singleton
         public static TTSManager Instance { get; private set; }
-
-        [Header("Piper Config")]
-        [SerializeField] private string _piperExePath = "Piper/piper.exe";
-        [SerializeField] private string _modelPath    = "Piper/voices/en_US-amy-medium.onnx";
 
         [Header("Audio")]
         [SerializeField] private AudioSource _audioSource;
@@ -49,7 +46,10 @@ namespace AIRA.Voice
         public static event Action<string> OnSpeakText;
 
         // Properti status TTS aktif
-        public bool IsSpeaking => _isSpeaking || _isProcessingQueue;
+        public bool IsSpeaking  => _isSpeaking || _isProcessingQueue;
+
+        // Flag warm-up selesai
+        public bool IsWarmedUp { get; private set; }
 
         // State internal
         private Coroutine _speakCoroutine;
@@ -79,24 +79,23 @@ namespace AIRA.Voice
             DontDestroyOnLoad(gameObject);
 
             // Resolve path absolut Piper
-            _resolvedPiperExe  = Path.Combine(Application.streamingAssetsPath, _piperExePath);
-            _resolvedModelPath = Path.Combine(Application.streamingAssetsPath, _modelPath);
+            _resolvedPiperExe  = PathConfig.PiperExe;
+            _resolvedModelPath = PathConfig.PiperVoice;
         }
 
         // Verifikasi path, warm-up Piper, report ready
         private void Start()
         {
-            bool exeExists   = System.IO.File.Exists(_resolvedPiperExe);
-            bool modelExists = System.IO.File.Exists(_resolvedModelPath);
+            bool exeExists   = File.Exists(_resolvedPiperExe);
+            bool modelExists = File.Exists(_resolvedModelPath);
+
+            if (!exeExists)
+                Debug.LogWarning($"[TTSManager] Piper exe tidak ditemukan: {_resolvedPiperExe}");
+            if (!modelExists)
+                Debug.LogWarning($"[TTSManager] Voice model tidak ditemukan: {_resolvedModelPath}");
 
             if (exeExists && modelExists)
-            {
                 StartCoroutine(WarmUpAndReady());
-            }
-            else
-            {
-                Debug.LogWarning("[TTSManager] Piper exe atau model tidak ditemukan — TTS tidak ready.");
-            }
         }
 
         // Generate WAV dummy lalu report ready
@@ -112,6 +111,7 @@ namespace AIRA.Voice
             else
                 Debug.Log("[TTSManager] Warm-up selesai.");
 
+            IsWarmedUp = true;
             // TTS siap dipakai
             LoadingGate.Instance?.SetTTSReady();
         }
@@ -137,7 +137,7 @@ namespace AIRA.Voice
         // Hentikan saat state berubah
         private void HandleStateChanged(GameManager.GameState prev, GameManager.GameState next)
         {
-            if (next != GameManager.GameState.SPEAKING && _isSpeaking)
+            if (next != GameManager.GameState.SPEAKING && IsSpeaking)
                 StopSpeaking();
         }
 
@@ -160,9 +160,11 @@ namespace AIRA.Voice
             while (_speakQueue.Count > 0)
             {
                 var (text, expression) = _speakQueue.Dequeue();
+                string cleanText   = TextUtils.StripExpressionTags(text);
                 _currentExpression = expression;
+                AiraController.Instance?.SetExpression(expression);
                 _isSpeaking        = true;
-                yield return StartCoroutine(SpeakCoroutine(ChunkBySentence(text)));
+                yield return StartCoroutine(SpeakCoroutine(ChunkBySentence(cleanText)));
             }
 
             _suppressSpeakEndEvent = false;
@@ -172,7 +174,7 @@ namespace AIRA.Voice
             // Fire event setelah queue benar-benar kosong
             OnSpeakEnd?.Invoke();
             if (GameManager.Instance?.CurrentState == GameManager.GameState.SPEAKING)
-                GameManager.Instance.ChangeState(GameManager.GameState.IDLE);
+                GameManager.Instance.RestoreActiveState();
         }
 
         // Terima teks dan ekspresi aktif
@@ -185,7 +187,7 @@ namespace AIRA.Voice
 
             _currentExpression = expression;
 
-            string[] chunks = ChunkBySentence(text);
+            string[] chunks = ChunkBySentence(TextUtils.StripExpressionTags(text));
             _isSpeaking     = true;
             _speakCoroutine = StartCoroutine(SpeakCoroutine(chunks));
         }
@@ -365,23 +367,84 @@ namespace AIRA.Voice
             CleanupTempFile(path);
         }
 
-        // Generate audio di background thread
+        // Bungkus coroutine ke Task
         private System.Threading.Tasks.Task RunPiperAsync(string text, string outputPath)
         {
             RegisterTempFile(outputPath);
-            return System.Threading.Tasks.Task.Run(() =>
+            var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
+            StartCoroutine(RunPiperCoroutine(text, outputPath, tcs));
+            return tcs.Task;
+        }
+
+        // Jalankan Piper dan poll HasExited
+        private IEnumerator RunPiperCoroutine(
+            string text,
+            string outputPath,
+            System.Threading.Tasks.TaskCompletionSource<bool> tcs)
+        {
+            string debugPath = Path.Combine(
+                System.Environment.GetFolderPath(
+                    System.Environment.SpecialFolder.UserProfile),
+                "Downloads", "piper_debug.txt");
+
+            System.Diagnostics.Process process = null;
+
+            try
             {
-                var process = new System.Diagnostics.Process();
-                process.StartInfo.FileName              = _resolvedPiperExe;
-                process.StartInfo.Arguments             = $"--model \"{_resolvedModelPath}\" --output_file \"{outputPath}\"";
-                process.StartInfo.RedirectStandardInput = true;
-                process.StartInfo.UseShellExecute       = false;
-                process.StartInfo.CreateNoWindow        = true;
+                process = new System.Diagnostics.Process();
+                process.StartInfo.FileName               = _resolvedPiperExe;
+                process.StartInfo.Arguments              = $"--model \"{_resolvedModelPath}\" --output_file \"{outputPath}\"";
+                process.StartInfo.WorkingDirectory       = Path.GetDirectoryName(_resolvedPiperExe);
+                process.StartInfo.RedirectStandardInput  = true;
+                process.StartInfo.RedirectStandardError  = true;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.UseShellExecute        = false;
+                process.StartInfo.CreateNoWindow         = true;
                 process.Start();
                 process.StandardInput.WriteLine(text);
                 process.StandardInput.Close();
-                process.WaitForExit(); // blocking di background thread
-            });
+            }
+            catch (System.Exception e)
+            {
+                File.AppendAllText(debugPath,
+                    $"[{System.DateTime.Now}] EXCEPTION (start): {e.Message}\n" +
+                    $"exe: {_resolvedPiperExe}\n" +
+                    $"model: {_resolvedModelPath}\n---\n");
+                tcs.SetException(e);
+                yield break;
+            }
+
+            // Poll tiap frame sampai proses selesai
+            while (!process.HasExited)
+                yield return null;
+
+            try
+            {
+                string stderr   = process.StandardError.ReadToEnd();
+                string stdout   = process.StandardOutput.ReadToEnd();
+                int    exitCode = process.ExitCode;
+
+                string content =
+                    $"[{System.DateTime.Now}]\n" +
+                    $"exe: {_resolvedPiperExe}\n" +
+                    $"model: {_resolvedModelPath}\n" +
+                    $"workdir: {Path.GetDirectoryName(_resolvedPiperExe)}\n" +
+                    $"output: {outputPath}\n" +
+                    $"stderr: {stderr}\n" +
+                    $"stdout: {stdout}\n" +
+                    $"exitcode: {exitCode}\n---\n";
+
+                File.AppendAllText(debugPath, content);
+                tcs.SetResult(true);
+            }
+            catch (System.Exception e)
+            {
+                File.AppendAllText(debugPath,
+                    $"[{System.DateTime.Now}] EXCEPTION (read): {e.Message}\n" +
+                    $"exe: {_resolvedPiperExe}\n" +
+                    $"model: {_resolvedModelPath}\n---\n");
+                tcs.SetException(e);
+            }
         }
 
         // Loop lip-sync saat audio play
@@ -409,6 +472,13 @@ namespace AIRA.Voice
             AiraController.Instance?.SetMouthOpen(0f);
             _currentMouth     = 0f;
             _lipSyncCoroutine = null;
+        }
+
+        // Set volume AudioSource TTS
+        public void SetVolume(float volume)
+        {
+            if (_audioSource != null)
+                _audioSource.volume = volume;
         }
 
         // Stop semua + bersihkan queue
@@ -470,7 +540,7 @@ namespace AIRA.Voice
 
             OnSpeakEnd?.Invoke();
             if (GameManager.Instance?.CurrentState == GameManager.GameState.SPEAKING)
-                GameManager.Instance.ChangeState(GameManager.GameState.IDLE);
+                GameManager.Instance.RestoreActiveState();
         }
 
         // Buat path temp unik

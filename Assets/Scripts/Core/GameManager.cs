@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using AIRA.AI;
 using AIRA.Character;
+using AIRA.Core;
 using AIRA.Emotion;
 using AIRA.UI;
 using AIRA.Voice;
@@ -35,13 +36,12 @@ public class GameManager : MonoBehaviour
     // Public State
     public GameState CurrentState { get; private set; } = GameState.IDLE;
     public AppSettings Settings { get; private set; }
-
-    [Header("Scene Dependencies")]
-    [SerializeField] private ChatUIManager _chatUIManager;
+    public MiniGameBase CurrentMiniGame { get; private set; }
 
     // Private
-    private Coroutine _thinkingTimeoutCoroutine;
+    private Coroutine  _thinkingTimeoutCoroutine;
     private FallbackData _fallbackData;
+    private GameState? _previousActiveState;
 
     private const string SettingsPath = "Assets/Data/settings.json";
 
@@ -142,6 +142,15 @@ public class GameManager : MonoBehaviour
         GameState previous = CurrentState;
         CurrentState = newState;
 
+        // Simpan state aktif sebelum masuk THINKING/SPEAKING
+        if ((newState == GameState.THINKING || newState == GameState.SPEAKING)
+            && previous != GameState.THINKING && previous != GameState.SPEAKING)
+            _previousActiveState = previous;
+
+        // Bersihkan previous state saat kembali ke IDLE
+        if (newState == GameState.IDLE)
+            _previousActiveState = null;
+
         if (previous == GameState.THINKING)
             StopThinkingTimeout();
 
@@ -152,19 +161,56 @@ public class GameManager : MonoBehaviour
         OnStateChanged?.Invoke(previous, newState);
     }
 
+    // Kembali ke state sebelum THINKING/SPEAKING
+    public void RestoreActiveState()
+    {
+        ChangeState(_previousActiveState ?? GameState.IDLE);
+        _previousActiveState = null;
+    }
+
+    // Cek apakah minigame sedang aktif (termasuk saat THINKING/SPEAKING dalam minigame)
+    public bool IsMinigameActive()
+    {
+        return CurrentState == GameState.MINIGAME_PLATFORMER
+            || CurrentState == GameState.MINIGAME_SPACESHOOTER
+            || CurrentState == GameState.MINIGAME_PLAYING
+            || CurrentState == GameState.MINIGAME_INTRO
+            || CurrentState == GameState.MINIGAME_RESULT
+            || _previousActiveState == GameState.MINIGAME_PLATFORMER
+            || _previousActiveState == GameState.MINIGAME_SPACESHOOTER
+            || _previousActiveState == GameState.MINIGAME_PLAYING;
+    }
+
+    // Daftarkan minigame aktif
+    public void RegisterMiniGame(MiniGameBase miniGame)
+    {
+        CurrentMiniGame = miniGame;
+    }
+
+    // Hapus registrasi minigame
+    public void UnregisterMiniGame()
+    {
+        CurrentMiniGame = null;
+    }
+
     // LLM Pipeline
     public void ProcessUserInput(string userInput)
     {
         if (this == null || Instance == null) return;
 
-        // Delegasi input ke minigame
-        if (CurrentState == GameState.MINIGAME_INTRO || CurrentState == GameState.MINIGAME_PLAYING)
+        Debug.Log($"[GameManager] ProcessUserInput called — CurrentState: {CurrentState}, int value: {(int)CurrentState}");
+
+        // Delegasi input ke minigame aktif
+        if (IsMinigameActive() && CurrentMiniGame != null && CurrentMiniGame.IsGameActive)
         {
-            HeadsUpGame.Instance?.ProcessUserResponse(userInput);
+            CurrentMiniGame.ProcessUserResponse(userInput);
             return;
         }
 
-        if (CurrentState != GameState.IDLE && CurrentState != GameState.LISTENING)
+        if (CurrentState != GameState.IDLE
+            && CurrentState != GameState.LISTENING
+            && CurrentState != GameState.MINIGAME_PLATFORMER
+            && CurrentState != GameState.MINIGAME_SPACESHOOTER)
         {
             Debug.LogWarning($"[GameManager] ProcessUserInput ignored — state is {CurrentState}.");
             return;
@@ -174,6 +220,14 @@ public class GameManager : MonoBehaviour
 
         if (this != null && gameObject.activeInHierarchy)
             StartCoroutine(ProcessLLMRequest(userInput));
+    }
+
+    // Kirim langsung ke pipeline LLM
+    public void SendToLLM(string input)
+    {
+        if (this == null || !gameObject.activeInHierarchy) return;
+        ChangeState(GameState.THINKING);
+        StartCoroutine(ProcessLLMRequest(input));
     }
 
     private IEnumerator ProcessLLMRequest(string userInput)
@@ -225,13 +279,15 @@ public class GameManager : MonoBehaviour
         if (string.IsNullOrEmpty(response))
             response = GetFallbackResponse("error");
 
+        response = TextUtils.StripEmoji(response);
+
         MemoryManager.Instance?.AddMessage("assistant", response);
 
         string expressionTag = AiraController.ExtractExpressionTag(response);
         AiraController.Instance?.SetExpression(expressionTag);
 
         string cleanText = AiraController.StripExpressionTags(response);
-        _chatUIManager?.DisplayMessage("aira", cleanText);
+        ChatUIManager.Instance?.DisplayMessageChunked("aira", cleanText);
         FindFirstObjectByType<AiraFloatingBubble>()?.ShowDialogBubble(cleanText, 4f);
 
         ChangeState(GameState.SPEAKING);
@@ -247,7 +303,7 @@ public class GameManager : MonoBehaviour
             // Fallback timer jika TTS tidak tersedia
             float speakDuration = Mathf.Clamp(cleanText.Length * 0.05f, 1.5f, 6f);
             yield return new WaitForSeconds(speakDuration);
-            ChangeState(GameState.IDLE);
+            RestoreActiveState();
         }
     }
 
@@ -302,15 +358,20 @@ public class GameManager : MonoBehaviour
         LLMManager.Instance?.CancelCurrent();
 
         string fallback = GetFallbackResponse("timeout");
-        _chatUIManager?.DisplayMessage("aira", fallback);
+        ChatUIManager.Instance?.DisplayMessage("aira", fallback);
         FindFirstObjectByType<AiraFloatingBubble>()?.ShowDialogBubble(fallback, 4f);
+        AiraController.Instance?.SetExpression("[NEUTRAL]");
+        if (TTSManager.Instance != null)
+            TTSManager.Instance.Speak(fallback, "NEUTRAL");
 
-        ChangeState(GameState.ERROR);
+        ChangeState(GameState.SPEAKING);
     }
 
     // Mulai scene Platformer
     public void StartPlatformer()
     {
+        TTSManager.Instance?.StopSpeaking();
+        Time.timeScale = 1f;
         ChangeState(GameState.MINIGAME_PLATFORMER);
         SceneManager.LoadScene("Platformer_Level01");
     }
@@ -318,13 +379,18 @@ public class GameManager : MonoBehaviour
     // Kembali ke scene utama
     public void EndPlatformer()
     {
-        SceneManager.LoadScene("MainScene");
+        TTSManager.Instance?.StopSpeaking();
+        STTManager.Instance?.StopListening();
+        _previousActiveState = null;
+        Time.timeScale = 1f;
         ChangeState(GameState.IDLE);
+        SceneManager.LoadScene("MainScene");
     }
 
     // Mulai scene SpaceShooter
     public void StartSpaceShooter()
     {
+        TTSManager.Instance?.StopSpeaking();
         ChangeState(GameState.MINIGAME_SPACESHOOTER);
         SceneManager.LoadScene("SpaceShooter");
     }
@@ -332,8 +398,30 @@ public class GameManager : MonoBehaviour
     // Kembali dari SpaceShooter
     public void EndSpaceShooter()
     {
-        SceneManager.LoadScene("MainScene");
+        TTSManager.Instance?.StopSpeaking();
+        STTManager.Instance?.StopListening();
+        _previousActiveState = null;
+        Time.timeScale = 1f;
         ChangeState(GameState.IDLE);
+        SceneManager.LoadScene("MainScene");
+    }
+
+    // Mulai HeadsUp di scene aktif
+    public void StartHeadsUp()
+    {
+        TTSManager.Instance?.StopSpeaking();
+        HeadsUpGame.Instance?.StartGame();
+    }
+
+    // Tampilkan reaksi Aira tanpa LLM
+    public void ProcessAiraReaction(string message)
+    {
+        if (CurrentState != GameState.IDLE && CurrentState != GameState.LISTENING) return;
+        ChatUIManager.Instance?.DisplayMessage("aira", message);
+        FindFirstObjectByType<AiraFloatingBubble>()?.ShowDialogBubble(message, 3f);
+        AiraController.Instance?.SetExpression("[NEUTRAL]");
+        if (TTSManager.Instance != null)
+            TTSManager.Instance.Speak(message, "NEUTRAL");
     }
 }
 

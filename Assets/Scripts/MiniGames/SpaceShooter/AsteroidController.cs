@@ -27,6 +27,9 @@ public class AsteroidController : BoundedEntity
     [Header("VFX Settings")]
     [SerializeField] private GameObject m_explosionVFXPrefab;
 
+    // Penembak terakhir asteroid ini
+    private BulletOwner m_lastShooter = BulletOwner.Player;
+
     private void Start()
     {
         if (m_rigidbody == null) m_rigidbody = GetComponent<Rigidbody2D>();
@@ -59,6 +62,9 @@ public class AsteroidController : BoundedEntity
 
         if (collision.gameObject.CompareTag("Bullet"))
         {
+            // Catat pemilik peluru sebelum destroy
+            Bullet b = collision.gameObject.GetComponent<Bullet>();
+            if (b != null) m_lastShooter = b.Owner;
             Destroy(collision.gameObject);
             TakeDamage(1f); // Menghancurkan asteroid sesuai health sistem
         }
@@ -66,12 +72,6 @@ public class AsteroidController : BoundedEntity
         {
             CheckAndDamagePlayer(collision.gameObject);
         }
-    }
-
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.gameObject.CompareTag("Player"))
-            CheckAndDamagePlayer(collision.gameObject);
     }
 
     private void CheckAndDamagePlayer(GameObject playerObj)
@@ -113,33 +113,54 @@ public class AsteroidController : BoundedEntity
         // Logika Splitting (Pecah)
         if (m_smallerAsteroidPrefabs != null && m_smallerAsteroidPrefabs.Count > 0)
         {
+            // Offset random agar spread tidak simetris kaku
+            float baseAngle = Random.Range(0f, 360f);
             for (int i = 0; i < m_splitCount; i++)
             {
-                Vector2 spreadDir = new Vector2(Mathf.Cos((360f / m_splitCount) * i * Mathf.Deg2Rad), Mathf.Sin((360f / m_splitCount) * i * Mathf.Deg2Rad));
+                float angle     = baseAngle + (360f / m_splitCount) * i;
+                Vector2 spreadDir = new Vector2(
+                    Mathf.Cos(angle * Mathf.Deg2Rad),
+                    Mathf.Sin(angle * Mathf.Deg2Rad)
+                );
 
-                GameObject piece = Instantiate(m_smallerAsteroidPrefabs[Random.Range(0, m_smallerAsteroidPrefabs.Count)], transform.position + (Vector3)(spreadDir * 1.2f), Quaternion.Euler(0, 0, Random.Range(0, 360)));
+                Vector3 spawnOffset = (Vector3)(spreadDir * 1.5f);
+                GameObject piece = Instantiate(
+                    m_smallerAsteroidPrefabs[Random.Range(0, m_smallerAsteroidPrefabs.Count)],
+                    transform.position + spawnOffset,
+                    Quaternion.Euler(0, 0, Random.Range(0, 360))
+                );
 
                 AsteroidController script = piece.GetComponent<AsteroidController>();
-                if (script != null) script.SetBounds(m_bounds); // Sinkronisasi Bounds
+                if (script != null) script.SetBounds(m_bounds);
 
                 Rigidbody2D rbPiece = piece.GetComponent<Rigidbody2D>();
                 if (rbPiece != null)
                 {
-                    // Berikan gaya menyebar berdasarkan m_forcePower prefab kecil tersebut
-                    float pieceSpeed = script != null ? script.m_forcePower : 7f;
+                    float pieceSpeed = script != null ? script.m_forcePower : 4f;
                     rbPiece.linearVelocity = spreadDir * pieceSpeed;
                 }
             }
         }
+        if (GameEvents.Instance != null) GameEvents.Instance.AsteroidDestroyed(transform.position);
+        GameEvents.Instance?.AsteroidDestroyedByShooter(transform.position, m_lastShooter);
         base.OnDie();
     }
 
     private void TryDropItem()
     {
         if (m_collectiblePrefab != null && Random.Range(0f, 100f) <= m_dropChance)
+        {
             Instantiate(m_collectiblePrefab, transform.position, Quaternion.identity);
+            if (GameEvents.Instance != null) GameEvents.Instance.CollectibleSpawned(transform.position);
+        }
     }
 
     public bool IsBigAsteroid() => m_isBigAsteroid;
+
+    // Set kecepatan dari luar
+    public void SetSpeed(float speed)
+    {
+        m_forcePower = speed;
+    }
 }
 }

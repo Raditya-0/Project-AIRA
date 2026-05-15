@@ -16,9 +16,13 @@ namespace AIRA.MiniGames.Platformer
         [SerializeField] private float _idleTimeout2 = 60f;
 
         [Header("Jump Settings")]
-        [SerializeField] private AiraVisionSystem _visionSystem;
-        [SerializeField] private float     _jumpForce   = 7f;
+        [SerializeField] private float     _jumpForce          = 7f;
+        [SerializeField] private float     _jumpCooldown       = 0.5f;
+        [SerializeField] private float     _wallDetectDistance = 0.8f;
         [SerializeField] private LayerMask _groundLayer;
+
+        [Header("Detection")]
+        [SerializeField] private LayerMask _characterLayer;
 
         [Header("Edge & Step Detection")]
         [SerializeField] private float _maxFollowYDiff  = 3f;
@@ -53,8 +57,17 @@ namespace AIRA.MiniGames.Platformer
         private bool    _idle20Fired;
         private bool    _idle60Fired;
         private bool    _isGrounded;
+        private float   _lastJumpTime;
         private bool    _playerFallFired;
         private bool    _airaFallFired;
+
+        [Header("SFX")]
+        [SerializeField] private PlatformerSFX _sfx;
+
+        [Header("Override Settings")]
+        [SerializeField] private float _arrivalRadius = 0.5f;
+        private Transform _overrideTarget;
+        private bool      _arrivedAtTarget;
 
         // Ambil komponen
         private void Awake()
@@ -75,8 +88,7 @@ namespace AIRA.MiniGames.Platformer
         {
             if (_followMode != FollowMode.FollowPlayer) return;
             if (_player == null) return;
-            if (GameManager.Instance?.CurrentState != GameManager.GameState.MINIGAME_PLATFORMER)
-                return;
+            if (GameManager.Instance?.IsMinigameActive() != true) return;
 
             TrackPlayerIdle();
 
@@ -100,10 +112,12 @@ namespace AIRA.MiniGames.Platformer
             if (_followMode != FollowMode.FollowPlayer) return;
             if (_player == null) return;
             if (_isOnPlayerHead) return;
-            if (GameManager.Instance?.CurrentState != GameManager.GameState.MINIGAME_PLATFORMER)
-                return;
+            if (GameManager.Instance?.IsMinigameActive() != true) return;
 
-            MoveToFollow();
+            if (_overrideTarget != null)
+                MoveToOverrideTarget();
+            else
+                MoveToFollow();
         }
 
         // Pantau apakah player diam
@@ -166,17 +180,15 @@ namespace AIRA.MiniGames.Platformer
             }
 
             _rb.linearVelocity = new Vector2(dir * _moveSpeed, _rb.linearVelocity.y);
+            _sfx?.PlayStep();
 
-            // Step-up atau lompat saat ada obstacle
-            if (_visionSystem != null && _visionSystem.HasObstacleAhead)
+            // Step-up atau lompat saat ada dinding
+            if (HasWallAheadFull(dir))
             {
-                if (Mathf.Sign(_visionSystem.NearestObstacleDirection) == dir)
-                {
-                    if (CanStepUp(dir))
-                        _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _stepUpForce);
-                    else
-                        TryJump();
-                }
+                if (CanStepUp(dir))
+                    _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _stepUpForce);
+                else
+                    TryJump();
             }
 
             FlipSprite(dir);
@@ -209,17 +221,55 @@ namespace AIRA.MiniGames.Platformer
             return topClear && obstacleHeight < _stepUpThreshold;
         }
 
+        // Deteksi dinding di depan Aira
+        private bool HasWallAhead(float dir)
+        {
+            Vector2 origin = new Vector2(
+                transform.position.x + dir * 0.2f,
+                transform.position.y
+            );
+            RaycastHit2D hit = Physics2D.Raycast(origin, new Vector2(dir, 0f), 0.4f, _groundLayer);
+            return hit && hit.collider != null;
+        }
+
+        // Deteksi dinding termasuk karakter
+        private bool HasWallAheadFull(float dir)
+        {
+            LayerMask combined  = _groundLayer | _characterLayer;
+            float[]   heights   = { -0.4f, 0f, 0.3f };
+
+            foreach (float h in heights)
+            {
+                Vector2 origin = new Vector2(
+                    transform.position.x + dir * 0.2f,
+                    transform.position.y + h
+                );
+                RaycastHit2D hit = Physics2D.Raycast(
+                    origin, new Vector2(dir, 0f), _wallDetectDistance, combined
+                );
+                if (hit && hit.collider != null
+                    && hit.collider.gameObject != gameObject)
+                    return true;
+            }
+            return false;
+        }
+
         // Cek grounded lalu lompat
         private void TryJump()
         {
+            if (Time.time - _lastJumpTime < _jumpCooldown) return;
+
             _isGrounded = Physics2D.OverlapCircle(
                 new Vector2(transform.position.x, transform.position.y - 0.5f),
                 0.15f,
                 _groundLayer
             );
+            Debug.Log($"[AiraJump] isGrounded={_isGrounded}, velocity={_rb.linearVelocity}");
+            if (!_isGrounded) return;
 
-            if (_isGrounded)
-                _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _jumpForce);
+            _lastJumpTime = Time.time;
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _jumpForce);
+            _sfx?.PlayJump();
         }
 
         // Hadap ke arah player
@@ -236,11 +286,99 @@ namespace AIRA.MiniGames.Platformer
             _isOnPlayerHead = true;
         }
 
+        // Override target sementara
+        public void OverrideTarget(Transform target)
+        {
+            _overrideTarget  = target;
+            _arrivedAtTarget = false;
+        }
+
+        // Kembali ke follow player
+        public void ClearOverride()
+        {
+            _overrideTarget  = null;
+            _arrivedAtTarget = false;
+        }
+
+        // Gerak menuju override target
+        private void MoveToOverrideTarget()
+        {
+            if (_arrivedAtTarget)
+            {
+                _rb.linearVelocity = new Vector2(0f, _rb.linearVelocity.y);
+                return;
+            }
+
+            float dist = Vector2.Distance(transform.position, _overrideTarget.position);
+            if (dist <= _arrivalRadius)
+            {
+                _rb.linearVelocity = new Vector2(0f, _rb.linearVelocity.y);
+                _arrivedAtTarget   = true;
+                AiraPlanner.Instance?.OnAiraArrivedAtPlate();
+                return;
+            }
+
+            float dir = Mathf.Sign(_overrideTarget.position.x - transform.position.x);
+
+            if (IsEdgeAhead(dir))
+            {
+                _rb.linearVelocity = new Vector2(0f, _rb.linearVelocity.y);
+                FlipSprite(dir);
+                return;
+            }
+
+            _rb.linearVelocity = new Vector2(dir * _moveSpeed, _rb.linearVelocity.y);
+            _sfx?.PlayStep();
+
+            if (HasWallAheadFull(dir))
+            {
+                if (CanStepUp(dir))
+                    _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _stepUpForce);
+                else
+                    TryJump();
+            }
+
+            FlipSprite(dir);
+        }
+
         // Hentikan follow dari luar
         public void SetEnabled(bool enabled)
         {
             this.enabled = enabled;
             if (!enabled) _rb.linearVelocity = Vector2.zero;
+        }
+
+        // Debug visual tiga ray ketinggian
+        private void OnDrawGizmos()
+        {
+            float dir = _player != null
+                ? Mathf.Sign(_player.position.x - transform.position.x)
+                : 1f;
+
+            float[] heights = { -0.4f, 0f, 0.3f };
+            foreach (float h in heights)
+            {
+                Vector2 origin = new Vector2(
+                    transform.position.x + dir * 0.2f,
+                    transform.position.y + h
+                );
+                Gizmos.color = Color.red;
+                Gizmos.DrawLine(origin, origin + new Vector2(dir * _wallDetectDistance, 0f));
+            }
+
+            // Edge ray — kuning
+            Vector2 edgeOrigin = new Vector2(
+                transform.position.x + dir * _edgeRayOffset,
+                transform.position.y - 0.3f
+            );
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(edgeOrigin, edgeOrigin + new Vector2(0f, -_edgeRayDistance));
+
+            // Grounded check — hijau
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(
+                new Vector2(transform.position.x, transform.position.y - 0.5f), 0.15f
+            );
         }
 
         // Flip sprite sesuai arah gerak

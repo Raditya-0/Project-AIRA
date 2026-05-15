@@ -32,22 +32,27 @@ public class HeadsUpUIManager : MonoBehaviour
     public void UpdateTimer(float seconds)
     {
         if (_timerText == null) return;
-        int s = Mathf.CeilToInt(Mathf.Max(seconds, 0f));
-        _timerText.text = s.ToString();
+
+        int totalSeconds = Mathf.CeilToInt(Mathf.Max(seconds, 0f));
+        
+        int minutes = totalSeconds / 60;
+        int remainingSeconds = totalSeconds % 60;
+
+        _timerText.text = string.Format("{0}:{1:00}", minutes, remainingSeconds);
     }
 
     // Update tampilan skor
     public void UpdateScore(int correct, int skip)
     {
         if (_scoreText != null)
-            _scoreText.text = $"[O] {correct}  [X] {skip}";
+            _scoreText.text = $"{correct}";
     }
 
     // Update label kategori
     public void UpdateCategory(string category)
     {
         if (_categoryText != null)
-            _categoryText.text = $"Category: {category}";
+            _categoryText.text = $"{category}";
     }
 
     // Toggle panel game saja

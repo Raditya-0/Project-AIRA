@@ -1,0 +1,15 @@
+:root {
+}
+
+.game-btn {
+}
+
+.game-btn {
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    background-color: rgba(255, 255, 255, 0.5);
+    font-size: 20px;
+    -unity-font-definition: url("project://database/Assets/Fonts/Poppins/Poppins-Medium.ttf?fileID=12800000&guid=d1e0d62062ee9004f96ec8c9263dd99f&type=3#Poppins-Medium");
+}

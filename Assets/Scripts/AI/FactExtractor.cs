@@ -5,7 +5,6 @@ using UnityEngine;
 
 namespace AIRA.AI
 {
-    // Regular C# class, bukan MonoBehaviour
     public class FactExtractor
     {
         [Serializable]
@@ -64,11 +63,11 @@ namespace AIRA.AI
         private string BuildExtractionPrompt(string conversation)
         {
             return
-                "Dari percakapan ini, ekstrak fakta penting tentang player.\n" +
-                "Balas HANYA dengan JSON format:\n" +
+                "From this conversation, extract important facts about the player.\n" +
+                "Reply ONLY with JSON format:\n" +
                 "{\"playerName\":null,\"newLikes\":[],\"newDislikes\":[],\"newMoments\":[]}\n" +
-                "Jika tidak ada fakta baru, semua field array kosong.\n\n" +
-                "Percakapan:\n" + conversation;
+                "If there are no new facts, all array fields should be empty.\n\n" +
+                "Conversation:\n" + conversation;
         }
 
         // Parse dan gabung ke LongTermFacts

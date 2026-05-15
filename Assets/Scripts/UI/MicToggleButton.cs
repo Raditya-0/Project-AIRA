@@ -1,52 +1,67 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using AIRA.UI;
 using AIRA.Voice;
 
-public class MicToggleButton : MonoBehaviour
+public class MicToggleButton : CustomToggle, IPointerEnterHandler, IPointerExitHandler
 {
-    [SerializeField] private Image _buttonImage;
+    [Header("Hover Sprites")]
+    [SerializeField] private Sprite _spriteOnHover;
+    [SerializeField] private Sprite _spriteOffHover;
 
-    [Header("Warna Tombol")]
-    [SerializeField] private Color _colorOn  = new Color(0.2f, 0.8f, 0.2f, 1f);
-    [SerializeField] private Color _colorOff = new Color(0.8f, 0.2f, 0.2f, 1f);
+    private bool _isHovering;
+    private bool _currentState;
+    private Image _image;
 
-    private bool _isActive = false;
-
-    // Subscribe event STTManager
+    // Daftar semua event listener
     private void OnEnable()
     {
-        STTManager.OnListeningStateChanged += SetActive;
+        if (_image == null) _image = GetComponent<Image>();
+        STTManager.OnListeningStateChanged += OnSTTListeningStateChanged;
+        OnValueChanged += OnToggleValueChanged;
     }
 
-    // Lepas event STTManager
+    // Hapus semua event listener
     private void OnDisable()
     {
-        STTManager.OnListeningStateChanged -= SetActive;
+        STTManager.OnListeningStateChanged -= OnSTTListeningStateChanged;
+        OnValueChanged -= OnToggleValueChanged;
     }
 
-    // Tombol ditekan user
-    public void OnClick()
+    // Sync state dari STTManager
+    private void OnSTTListeningStateChanged(bool isOn)
     {
-        _isActive = !_isActive;
-        UpdateColor();
-
-        if (_isActive)
-            STTManager.Instance?.StartListening();
-        else
-            STTManager.Instance?.StopListening();
+        _currentState = isOn;
+        SetState(isOn);
     }
 
-    // Sync warna dari luar
-    public void SetActive(bool active)
+    // Trigger STTManager saat toggle berubah
+    private void OnToggleValueChanged(bool isOn)
     {
-        _isActive = active;
-        UpdateColor();
+        _currentState = isOn;
+        if (isOn) STTManager.Instance?.StartListening();
+        else STTManager.Instance?.StopListening();
     }
 
-    // Terapkan warna ke image
-    private void UpdateColor()
+    // Aktifkan hover state
+    public void OnPointerEnter(PointerEventData eventData)
     {
-        if (_buttonImage != null)
-            _buttonImage.color = _isActive ? _colorOn : _colorOff;
+        _isHovering = true;
+        UpdateVisuals();
+    }
+
+    // Nonaktifkan hover state
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        _isHovering = false;
+        UpdateVisuals();
+    }
+
+    // Update sprite saat hover
+    private void UpdateVisuals()
+    {
+        if (_image == null || !_isHovering) return;
+        _image.sprite = _currentState ? _spriteOnHover : _spriteOffHover;
     }
 }

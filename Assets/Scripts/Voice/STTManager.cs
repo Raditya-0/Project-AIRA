@@ -1,9 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using TMPro;
 using Whisper;
 using Whisper.Utils;
+using AIRA.Core;
 using AIRA.UI;
 
 namespace AIRA.Voice
@@ -32,10 +35,24 @@ namespace AIRA.Voice
         [Header("Settings")]
         [SerializeField] private bool _autoSend = true;
 
-        private bool  _isListening;
-        private bool  _isPaused;
-        private bool  _shouldTranscribe;
-        private Color _normalColor;
+        [Header("STT Filter Settings")]
+        [SerializeField] private float _minTokenConfidence = 0.4f;
+
+        private static readonly string[] k_HallucinationBlacklist = {
+            "[BLANK_AUDIO]", "[ Silence ]", "[ silence ]", "(silence)",
+            "[MUSIC]", "[music]", "♪", "Thank you.", "Thanks for watching.",
+            "Thank you for watching.", "Please subscribe.", "[ Pause ]"
+        };
+
+        // Flag inisialisasi selesai
+        public bool IsInitialized { get; private set; }
+
+        private bool      _isListening;
+        private bool      _isMicOn;
+        private bool      _isPaused;
+        private bool      _shouldTranscribe;
+        private Color     _normalColor;
+        private Coroutine _ttsSubscribeCoroutine;
 
         // Awake setup singleton
         private void Awake()
@@ -46,6 +63,7 @@ namespace AIRA.Voice
                 return;
             }
             Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
 
         // Start inisialisasi Whisper
@@ -54,7 +72,9 @@ namespace AIRA.Voice
             if (_inputField != null)
                 _normalColor = _inputField.textComponent.color;
 
-            _whisperManager.language = _language;
+            _whisperManager.language     = _language;
+            _whisperManager.enableTokens = true;
+            _micRecord.echo              = false;
 
             // Terapkan device awal
             ApplyDeviceToMicRecord();
@@ -65,7 +85,8 @@ namespace AIRA.Voice
                     Debug.Log($"[STTManager] Device [{i}]: {devices[i]}");
             }
 
-            LoadingGate.Instance?.SetSTTReady();
+            StartCoroutine(WaitForWhisperReady());
+            _ttsSubscribeCoroutine = StartCoroutine(SubscribeToTTSEvents());
         }
 
         // Subscribe event game dan mic
@@ -80,6 +101,17 @@ namespace AIRA.Voice
         {
             GameManager.OnStateChanged -= HandleStateChanged;
             _micRecord.OnRecordStop    -= HandleRecordStop;
+
+            if (_ttsSubscribeCoroutine != null)
+            {
+                StopCoroutine(_ttsSubscribeCoroutine);
+                _ttsSubscribeCoroutine = null;
+            }
+            if (TTSManager.Instance != null)
+            {
+                TTSManager.Instance.OnSpeakStart -= OnTTSSpeakStart;
+                TTSManager.Instance.OnSpeakEnd   -= OnTTSSpeakEnd;
+            }
         }
 
         // Pause/resume sesuai state
@@ -94,9 +126,13 @@ namespace AIRA.Voice
                     PauseListening();
                     break;
                 case GameManager.GameState.IDLE:
-                    ResumeListening();
+                    if (_isListening)
+                        ResumeListening();
+                    else
+                        StartListening();
                     break;
                 case GameManager.GameState.MINIGAME_PLATFORMER:
+                case GameManager.GameState.MINIGAME_SPACESHOOTER:
                     if (!_isListening)
                         StartListening();
                     else
@@ -115,6 +151,7 @@ namespace AIRA.Voice
             if (_isListening || !IsSTTEnabled()) return;
 
             _isListening      = true;
+            _isMicOn          = true;
             _isPaused         = false;
             _shouldTranscribe = true;
             OnListeningStateChanged?.Invoke(true);
@@ -128,6 +165,7 @@ namespace AIRA.Voice
             if (!_isListening) return;
 
             _isListening      = false;
+            _isMicOn          = false;
             _isPaused         = false;
             _shouldTranscribe = false;
 
@@ -152,7 +190,8 @@ namespace AIRA.Voice
         {
             if (!_isListening || !_isPaused || !IsSTTEnabled()) return;
 
-            _isPaused = false;
+            _isPaused         = false;
+            _shouldTranscribe = true;
             OnListeningStateChanged?.Invoke(true);
 
             _micRecord.StartRecord();
@@ -217,26 +256,147 @@ namespace AIRA.Voice
             if (!_shouldTranscribe || chunk.Data == null) return;
 
             var result = await _whisperManager.GetTextAsync(chunk.Data, chunk.Frequency, chunk.Channels);
-            if (result == null || string.IsNullOrWhiteSpace(result.Result)) return;
-            if (result.Result.Contains("[BLANK_AUDIO]")) return;
+            if (result == null) return;
 
-            string cleaned = TextUtils.CleanSTTResult(result.Result);
-            if (string.IsNullOrWhiteSpace(cleaned)) return;
+            // Layer 1: cek bahasa
+            if (!string.IsNullOrEmpty(result.Language) && result.Language != "en")
+            {
+                TriggerAiraReaction(ReactionType.WrongLanguage);
+                RestartIfActive();
+                return;
+            }
 
-            if (_inputField != null)
-                _inputField.text = cleaned;
+            // Layer 2: strip bracket tags lalu cek sisa teks
+            string raw      = result.Result ?? "";
+            string stripped = Regex.Replace(raw, @"^\s*\[[^\]]*\]\s*", "").Trim();
+            if (string.IsNullOrWhiteSpace(stripped))
+            {
+                RestartIfActive();
+                return;
+            }
 
+            // Layer 3: token confidence
+            if (result.Segments != null && result.Segments.Count > 0)
+            {
+                float totalProb = 0f;
+                int tokenCount  = 0;
+                foreach (var seg in result.Segments)
+                {
+                    if (seg.Tokens == null) continue;
+                    foreach (var token in seg.Tokens)
+                    {
+                        if (token.IsSpecial) continue;
+                        totalProb += token.Prob;
+                        tokenCount++;
+                    }
+                }
+                if (tokenCount > 0 && (totalProb / tokenCount) < _minTokenConfidence)
+                {
+                    TriggerAiraReaction(ReactionType.LowConfidence);
+                    RestartIfActive();
+                    return;
+                }
+            }
+
+            // Layer 4: minimal satu kata bermakna
+            string cleaned  = TextUtils.CleanSTTResult(stripped);
+            int    wordCount = cleaned.Split(
+                new char[] { ' ', '\t' },
+                StringSplitOptions.RemoveEmptyEntries).Length;
+            if (string.IsNullOrWhiteSpace(cleaned) || wordCount < 1)
+            {
+                RestartIfActive();
+                return;
+            }
+
+            // Lolos semua filter — proses normal
+            if (_inputField != null) _inputField.text = cleaned;
             OnResultReady?.Invoke(cleaned);
+            if (_autoSend) SendToChat(cleaned);
+            RestartIfActive();
+        }
 
-            if (_autoSend)
-                SendToChat(cleaned);
+        private enum ReactionType { DidntHear, LowConfidence, WrongLanguage }
 
-            // Restart rekaman jika masih aktif
+        private static readonly string[] k_DidntHearPool = {
+            "Hmm? Did you say something?",
+            "I didn't catch that, could you say it again?",
+            "Sorry, I think I missed that!"
+        };
+        private static readonly string[] k_LowConfidencePool = {
+            "Huh, I didn't quite catch that, could you speak a bit clearer?",
+            "I heard something but I'm not sure what — say that again?",
+            "Could you repeat that? It sounded a bit unclear."
+        };
+        private static readonly string[] k_WrongLanguagePool = {
+            "Hee, I can't understand that language! Speak English to me~",
+            "I only understand English, sorry about that!",
+            "Hmm, that didn't sound like English to me!"
+        };
+
+        // Trigger reaksi Aira sesuai kondisi
+        private void TriggerAiraReaction(ReactionType type)
+        {
+            string[] pool = type switch {
+                ReactionType.WrongLanguage  => k_WrongLanguagePool,
+                ReactionType.LowConfidence  => k_LowConfidencePool,
+                _                           => k_DidntHearPool
+            };
+            string msg = pool[UnityEngine.Random.Range(0, pool.Length)];
+            GameManager.Instance?.ProcessAiraReaction(msg);
+        }
+
+        // Restart rekaman jika masih aktif
+        private void RestartIfActive()
+        {
             if (_isListening && !_isPaused)
             {
                 _shouldTranscribe = true;
                 _micRecord.StartRecord();
             }
+        }
+
+        // Tunggu Whisper model loaded
+        private IEnumerator WaitForWhisperReady()
+        {
+            yield return new WaitUntil(() =>
+                _whisperManager != null && _whisperManager.IsLoaded);
+            ApplyDeviceToMicRecord();
+            IsInitialized = true;
+            LoadingGate.Instance?.SetSTTReady();
+            Debug.Log("[STTManager] Whisper siap.");
+        }
+
+        // Tunggu TTS siap, subscribe event
+        private IEnumerator SubscribeToTTSEvents()
+        {
+            yield return new WaitUntil(() => TTSManager.Instance != null);
+            TTSManager.Instance.OnSpeakStart += OnTTSSpeakStart;
+            TTSManager.Instance.OnSpeakEnd   += OnTTSSpeakEnd;
+            _ttsSubscribeCoroutine = null;
+        }
+
+        // Pause mic saat TTS mulai
+        private void OnTTSSpeakStart()
+        {
+            if (_isListening && !_isPaused)
+                PauseListening();
+        }
+
+        // Restart mic setelah TTS selesai
+        private void OnTTSSpeakEnd()
+        {
+            if (!_isMicOn) return;
+            StartCoroutine(RestartListening());
+        }
+
+        // Stop lalu start ulang mic
+        private IEnumerator RestartListening()
+        {
+            StopListening();
+            _isMicOn = true;
+            yield return new WaitForSeconds(0.2f);
+            StartListening();
         }
 
         // Kirim teks ke chat

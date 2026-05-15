@@ -17,8 +17,9 @@ namespace AIRA.MiniGames.Platformer
         [SerializeField] private LayerMask  _airaLayer;
 
         [Header("References")]
-        [SerializeField] private Animator   _animator;
-        [SerializeField] private SpriteRenderer _spriteRenderer;
+        [SerializeField] private Animator        _animator;
+        [SerializeField] private SpriteRenderer  _spriteRenderer;
+        [SerializeField] private PlatformerSFX   _sfx;
 
         // Properti akses luar
         public bool IsGrounded { get; private set; }
@@ -36,16 +37,25 @@ namespace AIRA.MiniGames.Platformer
         // Baca input setiap frame
         private void Update()
         {
-            if (GameManager.Instance?.CurrentState != GameManager.GameState.MINIGAME_PLATFORMER)
-                return;
-
-            _horizontalInput = Keyboard.current.dKey.isPressed ? 1f :
-                               Keyboard.current.aKey.isPressed ? -1f : 0f;
+            bool playable = GameManager.Instance?.IsMinigameActive() == true;
 
             CheckGrounded();
 
-            if (Keyboard.current.spaceKey.wasPressedThisFrame && IsGrounded)
-                Jump();
+            if (playable)
+            {
+                _horizontalInput = Keyboard.current.dKey.isPressed ? 1f :
+                                   Keyboard.current.aKey.isPressed ? -1f : 0f;
+
+                if (Keyboard.current.spaceKey.wasPressedThisFrame && IsGrounded)
+                    Jump();
+
+                if (IsGrounded && Mathf.Abs(_horizontalInput) > 0.01f)
+                    _sfx?.PlayStep();
+            }
+            else
+            {
+                _horizontalInput = 0f;
+            }
 
             UpdateAnimator();
             FlipSprite();
@@ -54,9 +64,13 @@ namespace AIRA.MiniGames.Platformer
         // Terapkan movement physics
         private void FixedUpdate()
         {
-            if (GameManager.Instance?.CurrentState != GameManager.GameState.MINIGAME_PLATFORMER)
-                return;
+            if (GameManager.Instance?.IsMinigameActive() != true) return;
 
+            if (!PlatformerGame.Instance?.IsGameActive == true)
+            {
+                _rb.linearVelocity = Vector2.zero;
+                return;
+            }
             _rb.linearVelocity = new Vector2(_horizontalInput * _moveSpeed, _rb.linearVelocity.y);
         }
 
@@ -74,6 +88,7 @@ namespace AIRA.MiniGames.Platformer
         {
             _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _jumpForce);
             _animator?.SetTrigger("doJump");
+            _sfx?.PlayJump();
         }
 
         // Flip sprite sesuai arah

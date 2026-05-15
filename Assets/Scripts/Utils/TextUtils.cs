@@ -6,12 +6,13 @@ public static class TextUtils
     public static string StripExpressionTags(string text)
     {
         if (string.IsNullOrEmpty(text)) return text;
-        return Regex.Replace(
+        text = Regex.Replace(
             text,
-            @"\[(HAPPY|SAD|SURPRISED|THINKING|SHY|NEUTRAL)\]\s*",
+            @"\[[A-Z_]+\]\s*",
             string.Empty,
             RegexOptions.IgnoreCase
         ).Trim();
+        return text;
     }
 
     // Cari tag pertama
@@ -26,11 +27,21 @@ public static class TextUtils
         return match.Success ? match.Value.ToUpper() : "[NEUTRAL]";
     }
 
-    // Hapus emoji unicode
+    // Hapus emoji dan non-standar
     public static string StripEmoji(string text)
     {
         if (string.IsNullOrEmpty(text)) return text;
-        return Regex.Replace(text, @"\p{Cs}|\p{So}", "").Trim();
+
+        text = Regex.Replace(text, @"[☀-➿]", ""); // simbol misc
+        text = Regex.Replace(text, @"[\uD800-\uDFFF]", ""); // surrogate pairs
+        text = Regex.Replace(text, @"[⌀-⏿]", ""); // simbol teknis
+        text = Regex.Replace(text, @"[■-◿]", ""); // geometric shapes
+        text = Regex.Replace(text, @"[✀-➿]", ""); // dingbats
+        text = Regex.Replace(text, @"\p{Cs}", "");           // surrogate chars
+        text = Regex.Replace(text, @"\p{Co}", "");           // private use
+        text = Regex.Replace(text, @"\p{Cn}", "");           // unassigned
+
+        return text.Trim();
     }
 
     // Bersihkan hasil STT

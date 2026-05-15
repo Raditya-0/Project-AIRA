@@ -1,41 +1,37 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace AIRA.MiniGames.Platformer
 {
-    [System.Serializable]
-    public class VisionTarget
-    {
-        public string    label;
-        public Transform target;
-        public bool      isObstacle;
-    }
-
     public class AiraVisionSystem : MonoBehaviour
     {
         [Header("Vision Settings")]
-        [SerializeField] private float     _visionRadius   = 15f;
-        [SerializeField] private LayerMask _detectLayer;
+        [SerializeField] private float     _visionRadius  = 15f;
 
         [Header("References")]
         [SerializeField] private Transform _keyTransform;
         [SerializeField] private Transform _endPointTransform;
 
-        [Header("Vision Targets")]
-        [SerializeField] private List<VisionTarget> _visionTargets = new();
-
         [Header("Update Interval")]
         [SerializeField] private float _updateInterval = 0.1f;
 
+        // Akses endpoint untuk planner
+        public Transform EndPointTransform => _endPointTransform;
+
         // Hasil deteksi publik
-        public bool   CanSeeKey          { get; private set; }
-        public bool   CanSeeEnd          { get; private set; }
-        public float  KeyDistance        { get; private set; }
-        public float  EndDistance        { get; private set; }
-        public string KeyDirection       { get; private set; }
-        public string EndDirection       { get; private set; }
-        public bool   HasObstacleAhead          { get; private set; }
-        public float  NearestObstacleDirection  { get; private set; }
+        public bool   CanSeeKey    { get; private set; }
+        public bool   CanSeeEnd    { get; private set; }
+        public float  KeyDistance  { get; private set; }
+        public float  EndDistance  { get; private set; }
+        public string KeyDirection { get; private set; }
+        public string EndDirection { get; private set; }
+
+        // Semua plate dalam radius vision
+        public List<PressurePlate> VisibleButtons { get; private set; } = new();
+
+        // Reactive terdekat yang blocking path Aira ke endpoint
+        public PlateReactive NearestBlockingWall { get; private set; }
 
         private float _timer;
 
@@ -48,13 +44,12 @@ namespace AIRA.MiniGames.Platformer
             UpdateVision();
         }
 
-        // Deteksi posisi key dan endpoint
+        // Deteksi posisi key, endpoint, dan interactable
         private void UpdateVision()
         {
-            CanSeeKey               = false;
-            CanSeeEnd               = false;
-            HasObstacleAhead        = false;
-            NearestObstacleDirection = 0f;
+            CanSeeKey = false;
+            CanSeeEnd = false;
+            NearestBlockingWall = null;
 
             if (_keyTransform != null && _keyTransform.gameObject.activeSelf)
             {
@@ -78,25 +73,35 @@ namespace AIRA.MiniGames.Platformer
                 }
             }
 
-            // Deteksi semua vision target generic
-            foreach (var vt in _visionTargets)
-            {
-                if (vt.target == null) continue;
-                float dist = Vector2.Distance(transform.position, vt.target.position);
-                if (dist > _visionRadius) continue;
+            UpdateInteractables();
+        }
 
-                if (vt.isObstacle)
-                {
-                    float dx = vt.target.position.x - transform.position.x;
-                    float dy = vt.target.position.y - transform.position.y;
-                    bool isAhead = Mathf.Abs(dx) < 3f && dy > -1f && dy < 2f;
-                    if (isAhead)
-                    {
-                        HasObstacleAhead         = true;
-                        NearestObstacleDirection = dx;
-                    }
-                }
-            }
+        // Perbarui daftar interactable terlihat
+        private void UpdateInteractables()
+        {
+            VisibleButtons = InteractableRegistry
+                .GetPlatesInRadius(transform.position, _visionRadius);
+
+            var reactives = InteractableRegistry
+                .GetReactivesInRadius(transform.position, _visionRadius);
+
+            NearestBlockingWall = reactives
+                .Where(r => r.IsBlocking)
+                .Where(r => IsBlockingPath(r.transform.position))
+                .OrderBy(r => Vector2.Distance(transform.position, r.transform.position))
+                .FirstOrDefault();
+        }
+
+        // Cek apakah reactive ada di antara Aira dan endpoint
+        private bool IsBlockingPath(Vector2 wallPos)
+        {
+            if (_endPointTransform == null) return false;
+            float airaX = transform.position.x;
+            float endX  = _endPointTransform.position.x;
+            float wallX = wallPos.x;
+            float minX  = Mathf.Min(airaX, endX);
+            float maxX  = Mathf.Max(airaX, endX);
+            return wallX > minX && wallX < maxX;
         }
 
         // Terjemahkan posisi ke arah relatif
@@ -119,26 +124,32 @@ namespace AIRA.MiniGames.Platformer
         // Build konteks vision untuk LLM
         public string BuildVisionContext()
         {
-            var parts = new System.Text.StringBuilder();
+            var sb = new System.Text.StringBuilder();
 
             if (CanSeeKey)
-                parts.Append($"I can see the key {KeyDirection}, {DescribeDistance(KeyDistance)}. ");
+                sb.Append($"I can see the key {KeyDirection}, {DescribeDistance(KeyDistance)}. ");
 
             if (CanSeeEnd)
-                parts.Append($"I can see the goal {EndDirection}, {DescribeDistance(EndDistance)}. ");
+                sb.Append($"I can see the goal {EndDirection}, {DescribeDistance(EndDistance)}. ");
 
-            // Tambah semua target terdeteksi
-            foreach (var vt in _visionTargets)
+            foreach (var plate in VisibleButtons)
             {
-                if (vt.target == null) continue;
-                float dist = Vector2.Distance(transform.position, vt.target.position);
-                if (dist > _visionRadius) continue;
-
-                string dir = GetRelativeDirection(vt.target.position);
-                parts.Append($"I can see a {vt.label} {dir}, {DescribeDistance(dist)}. ");
+                string dir    = GetRelativeDirection(plate.transform.position);
+                string dist   = DescribeDistance(
+                    Vector2.Distance(transform.position, plate.transform.position));
+                string effect = plate.affects != null
+                    ? $" that {plate.effectDesc}"
+                    : "";
+                sb.Append($"I can see a button{effect} {dir}, {dist}. ");
             }
 
-            string result = parts.ToString().Trim();
+            if (NearestBlockingWall != null)
+            {
+                string dir = GetRelativeDirection(NearestBlockingWall.transform.position);
+                sb.Append($"There is a {NearestBlockingWall.blockDesc} {dir}. ");
+            }
+
+            string result = sb.ToString().Trim();
             return result.Length > 0 ? result : "I can't see anything important from here.";
         }
     }

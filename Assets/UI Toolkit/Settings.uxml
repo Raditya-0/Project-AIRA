@@ -1,0 +1,105 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/Settings.uss?fileID=7433441132597879392&amp;guid=944bfe77ee9c3694cac554fa9903b071&amp;type=3#Settings"/>
+    <ui:VisualElement name="SettingsOverlay" picking-mode="Ignore" style="flex-grow: 1; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); align-items: center; justify-content: center; border-left-color: rgb(56, 56, 56); border-right-color: rgb(56, 56, 56); border-top-color: rgb(56, 56, 56); border-bottom-color: rgb(56, 56, 56); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0;">
+        <ui:VisualElement name="SettingsModal" picking-mode="Position" style="flex-grow: 0; width: 800px; height: auto; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; overflow: hidden; background-color: rgb(51, 25, 10);">
+            <ui:VisualElement name="HeaderSection" style="flex-grow: 0; flex-direction: row; justify-content: space-between; padding-top: 15px; padding-right: 20px; padding-bottom: 15px; padding-left: 20px; background-color: rgb(176, 105, 76);">
+                <ui:Label text="Settings" name="TitleText" style="-unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); color: rgb(255, 255, 255); font-size: 40px; height: 60px; margin-top: 0; padding-top: 0;"/>
+                <ui:Button text="" name="CloseBtn" style="background-image: url(&quot;project://database/Assets/Asteroids%20Project%20Assets/Sprites/Close.png?fileID=2800000&amp;guid=d31f7e354a431a442b5f908f72b92bcf&amp;type=3#Close&quot;); -unity-background-scale-mode: scale-and-crop; background-size: 50% 50%; background-color: rgb(193, 130, 105); flex-grow: 0; height: 40px; width: 40px; border-top-left-radius: 25px; border-top-right-radius: 25px; border-bottom-right-radius: 25px; border-bottom-left-radius: 25px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255);"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="BodySection" style="flex-grow: 1; flex-direction: row; padding-top: 30px; padding-right: 30px; padding-bottom: 30px; padding-left: 30px; background-color: rgb(84, 61, 48);">
+                <ui:VisualElement name="LeftColumn" style="flex-grow: 1; flex-basis: 50%; margin-right: 10px; border-left-color: rgb(176, 105, 76); border-right-color: rgb(176, 105, 76); border-top-color: rgb(176, 105, 76); border-bottom-color: rgb(176, 105, 76); border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px;">
+                    <ui:Label text="VOLUME" name="CategoryTitle" style="color: rgb(201, 130, 100); margin-bottom: 0; -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Light.ttf?fileID=12800000&amp;guid=0df3b0253c23f614fae3c2376a3df6e1&amp;type=3#Poppins-Light&quot;); font-size: 30px; padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 10px; margin-top: 0; margin-right: 0; margin-left: 0; -unity-font-style: normal; letter-spacing: 5px;"/>
+                    <ui:VisualElement name="SettingRow" style="flex-grow: 0; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 15px; margin-right: 15px; margin-left: 15px;">
+                        <ui:VisualElement name="TextGroup" style="flex-grow: 1; width: 100px;">
+                            <ui:Label text="Master" name="Label" style="color: rgb(255, 255, 255); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); font-size: 20px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                            <ui:Label text="Total volume" style="color: rgb(201, 130, 100); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Regular.ttf?fileID=12800000&amp;guid=0659e81dcef80274eb187cca9834ec7a&amp;type=3#Poppins-Regular&quot;); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="ControlGroup" style="flex-grow: 1; flex-direction: row; align-items: center;">
+                            <ui:Slider name="MasterSlider" label="" value="42" high-value="100" style="flex-grow: 1; width: 50px;"/>
+                            <ui:Label name="MasterValue" text="100" style="color: rgb(255, 255, 255);"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="SettingRow" style="flex-grow: 0; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 15px; margin-right: 15px; margin-left: 15px;">
+                        <ui:VisualElement name="TextGroup" style="flex-grow: 1; width: 100px;">
+                            <ui:Label text="Music" name="Label" style="color: rgb(255, 255, 255); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); font-size: 20px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                            <ui:Label text="Background Music" style="color: rgb(201, 130, 100); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Regular.ttf?fileID=12800000&amp;guid=0659e81dcef80274eb187cca9834ec7a&amp;type=3#Poppins-Regular&quot;); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="ControlGroup" style="flex-grow: 1; flex-direction: row; align-items: center;">
+                            <ui:Slider name="MusicSlider" label="" value="42" high-value="100" style="flex-grow: 1; width: 50px;"/>
+                            <ui:Label name="MusicValue" text="100" style="color: rgb(255, 255, 255);"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="SettingRow" style="flex-grow: 0; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 15px; margin-right: 15px; margin-left: 15px;">
+                        <ui:VisualElement name="TextGroup" style="flex-grow: 1; width: 100px;">
+                            <ui:Label text="SFX" name="Label" style="color: rgb(255, 255, 255); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); font-size: 20px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                            <ui:Label text="Sound Effects" style="color: rgb(201, 130, 100); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Regular.ttf?fileID=12800000&amp;guid=0659e81dcef80274eb187cca9834ec7a&amp;type=3#Poppins-Regular&quot;); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="ControlGroup" style="flex-grow: 1; flex-direction: row; align-items: center;">
+                            <ui:Slider name="SFXSlider" label="" value="42" high-value="100" style="flex-grow: 1; width: 50px;"/>
+                            <ui:Label name="SFXValue" text="100" style="color: rgb(255, 255, 255);"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="SettingRow" style="flex-grow: 0; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 15px; margin-right: 15px; margin-left: 15px;">
+                        <ui:VisualElement name="TextGroup" style="flex-grow: 1; width: 100px;">
+                            <ui:Label text="TTS Voice" name="Label" style="color: rgb(255, 255, 255); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); font-size: 20px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                            <ui:Label text="Aira Voice" style="color: rgb(201, 130, 100); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Regular.ttf?fileID=12800000&amp;guid=0659e81dcef80274eb187cca9834ec7a&amp;type=3#Poppins-Regular&quot;); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="ControlGroup" style="flex-grow: 1; flex-direction: row; align-items: center;">
+                            <ui:Slider name="TTSVoiceSlider" label="" value="42" high-value="100" style="flex-grow: 1; width: 50px;"/>
+                            <ui:Label name="TTSVoiceValue" text="100" style="color: rgb(255, 255, 255);"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="RightColumn" style="flex-grow: 1; flex-basis: 50%; border-left-color: rgb(176, 105, 76); border-right-color: rgb(176, 105, 76); border-top-color: rgb(176, 105, 76); border-bottom-color: rgb(176, 105, 76); border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px;">
+                    <ui:Label text="INPUT / OUTPUT" name="CategoryTitle" style="color: rgb(201, 130, 100); margin-bottom: 0; -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Light.ttf?fileID=12800000&amp;guid=0df3b0253c23f614fae3c2376a3df6e1&amp;type=3#Poppins-Light&quot;); font-size: 30px; padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 10px; margin-top: 0; margin-right: 0; margin-left: 0; -unity-font-style: normal; letter-spacing: 5px;"/>
+                    <ui:VisualElement name="SettingRow" style="flex-grow: 0; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 15px; margin-right: 15px; margin-left: 15px;">
+                        <ui:VisualElement name="TextGroup" style="flex-grow: 1; width: 100px;">
+                            <ui:Label text="Microphone" name="Label" style="color: rgb(255, 255, 255); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); font-size: 20px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                            <ui:Label text="Input Device" style="color: rgb(201, 130, 100); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Regular.ttf?fileID=12800000&amp;guid=0659e81dcef80274eb187cca9834ec7a&amp;type=3#Poppins-Regular&quot;); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="ControlGroup" style="flex-grow: 1; flex-direction: row; align-items: center; justify-content: center; width: 120px;">
+                            <ui:DropdownField name="MicrophoneDropdown" label="" style="background-color: rgb(84, 61, 48); -unity-background-image-tint-color: rgb(84, 61, 48); width: 150px;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="SettingRow" style="flex-grow: 0; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 15px; margin-right: 15px; margin-left: 15px;">
+                        <ui:VisualElement name="TextGroup" style="flex-grow: 1; width: 100px;">
+                            <ui:Label text="STT" name="Label" style="color: rgb(255, 255, 255); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); font-size: 20px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                            <ui:Label text="Speak To Text" style="color: rgb(201, 130, 100); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Regular.ttf?fileID=12800000&amp;guid=0659e81dcef80274eb187cca9834ec7a&amp;type=3#Poppins-Regular&quot;); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="ControlGroup" style="flex-grow: 1; flex-direction: row; align-items: center; justify-content: center; width: 120px;">
+                            <ui:Toggle name="STTToggle" label="" style="right: -60px;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="SettingRow" style="flex-grow: 0; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 15px; margin-right: 15px; margin-left: 15px;">
+                        <ui:VisualElement name="TextGroup" style="flex-grow: 1; width: 100px;">
+                            <ui:Label text="TTS" name="Label" style="color: rgb(255, 255, 255); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); font-size: 20px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                            <ui:Label text="Text To Speech" style="color: rgb(201, 130, 100); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Regular.ttf?fileID=12800000&amp;guid=0659e81dcef80274eb187cca9834ec7a&amp;type=3#Poppins-Regular&quot;); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="ControlGroup" style="flex-grow: 1; flex-direction: row; align-items: center; justify-content: center; width: 120px;">
+                            <ui:Toggle name="TTSToggle" label="" style="right: -60px;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:Label text="AI COMPANION" name="CategoryTitle" style="color: rgb(201, 130, 100); margin-bottom: 0; -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Light.ttf?fileID=12800000&amp;guid=0df3b0253c23f614fae3c2376a3df6e1&amp;type=3#Poppins-Light&quot;); font-size: 30px; padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 10px; margin-top: 20px; margin-right: 20px; margin-left: 10px; -unity-font-style: normal; letter-spacing: 5px; border-left-color: rgb(176, 105, 76); border-right-color: rgb(176, 105, 76); border-top-color: rgb(176, 105, 76); border-bottom-color: rgb(176, 105, 76); border-top-width: 1px;"/>
+                    <ui:VisualElement name="SettingRow" style="flex-grow: 0; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 15px; margin-right: 15px; margin-left: 15px;">
+                        <ui:VisualElement name="TextGroup" style="flex-grow: 1; width: 100px;">
+                            <ui:Label text="Emotion Classifier" name="Label" style="color: rgb(255, 255, 255); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); font-size: 20px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                            <ui:Label text="Voice Emotion Detection" style="color: rgb(201, 130, 100); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Regular.ttf?fileID=12800000&amp;guid=0659e81dcef80274eb187cca9834ec7a&amp;type=3#Poppins-Regular&quot;); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="ControlGroup" style="flex-grow: 1; flex-direction: row; align-items: center; justify-content: center; width: 120px;">
+                            <ui:Toggle name="EmotionToggle" label="" style="right: -60px;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="SettingRow" style="flex-grow: 0; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 15px; margin-right: 15px; margin-left: 15px;">
+                        <ui:VisualElement name="TextGroup" style="flex-grow: 1; width: 100px;">
+                            <ui:Label text="Clear Memory" name="Label" style="color: rgb(255, 255, 255); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); font-size: 20px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                            <ui:Label text="Delete Chat History" style="color: rgb(201, 130, 100); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Regular.ttf?fileID=12800000&amp;guid=0659e81dcef80274eb187cca9834ec7a&amp;type=3#Poppins-Regular&quot;); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="ControlGroup" style="flex-grow: 1; flex-direction: row; align-items: center; justify-content: center; width: 120px;">
+                            <ui:Button name="ClearMemoryBtn" text="Clear Memory" style="right: -10px; background-color: rgba(188, 188, 188, 0); border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(217, 106, 106); border-right-color: rgb(217, 106, 106); border-top-color: rgb(217, 106, 106); border-bottom-color: rgb(217, 106, 106); color: rgb(217, 106, 106); -unity-font-definition: url(&quot;project://database/Assets/Fonts/Poppins/Poppins-Bold.ttf?fileID=12800000&amp;guid=fbc4826b65c72ee4cb72de71a6ffd305&amp;type=3#Poppins-Bold&quot;); -unity-font-style: bold; -unity-text-align: middle-right;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
